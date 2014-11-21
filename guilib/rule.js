@@ -25,7 +25,7 @@ Rule.prototype = {
 	, typeToIcon : {
 		"required" : "icons_required",
 		"unique" : "icons_unique",
-		"primary" : "icons_primary"
+		"primary unique" : "icons_primary"
 	}
 	, ruleIDRegEx : /Model\/Model\/ModelRules/
 	, ruleTypes : { "required" : true }//at start up everything from uniqueTypes will be added
@@ -69,7 +69,7 @@ Rule.prototype.createRule = function( _modelID1, _modelID2 ){
 	
 	var actions = [];
 	
-	if( model1.id.match( this.ruleIDRegEx ) && model1.id.match( this.ruleIDRegEx ) ){
+	if( model1.id.match( this.ruleIDRegEx ) && model2.id.match( this.ruleIDRegEx ) ){
 		//Can't connect two rules
 		alert( 'You cannot build a rule between two rules, at least one side must be a role.' );
 		return;
@@ -130,7 +130,7 @@ Rule.prototype.createRule = function( _modelID1, _modelID2 ){
 			"value" : modelRelationship1
 		};
 		
-		//try{
+		try{
 			var trans = master.transaction.createTransaction( "Model", actions );
 			
 			var visualActions = master.canvas.rule.createRule( modelRule.value );
@@ -138,20 +138,111 @@ Rule.prototype.createRule = function( _modelID1, _modelID2 ){
 			var trans = master.transaction.createTransaction( "VisualModel", visualActions, trans );
 			
 			master.transaction.processTransactions( trans );
-		/*}catch(err){
+		}catch(err){
 			throwError( 'line.js', 'createLine', err.message, false );
 			return;
-		}*/
+		}
 		
 		return;
 	} else if( model1.id.match( this.ruleIDRegEx ) ){
-		var modelRule = model1;
-		var modelRelationshipConnector = model2;
+		var modelRule = cloneJSON( model1 );
+		var modelRelationshipConnector = cloneJSON( model2 );
 	} else if ( model2.id.match( this.ruleIDRegEx ) ){
-		var modelRule = model1;
-		var modelRelationshipConnector = model2;
+		var modelRule = cloneJSON( model2 );
+		var modelRelationshipConnector = cloneJSON( model1 );
+	}
+	
+	var exists = false;
+	for( var existsRef in modelRule.ModelRuleConditions ){
+	if( existsRef !== 'empty' ){
+		var aModelRuleCon = modelRule.ModelRuleConditions[ existsRef ];
+		
+		if( aModelRuleCon.ModelRelationshipConnectorID === modelRelationshipConnector.id ){
+			exists = true;
+			break;
+		}
+	}
+	}
+	
+	var visualActions = [];
+	if( exists === true ){
+		if( getPropertyCount( modelRule.ModelRuleConditions, true ) === 0 ){
+			actions = this.deleteRule( modelRule );
+			
+			var visualRule = master.canvas.rule.findRuleByModelID( modelRule.id );
+			if( visualRule != undefined ){
+				visualActions = master.canvas.ormObj.deleteObj( visualRule.id );	
+			}
+		} else {
+			delete modelRule.ModelRuleConditions[ existsRef ];
+			
+			actions[ actions.length ] = {	
+				"objectID" : modelRule.id,
+				"commandType" : "update",
+				"value" : modelRule
+			}; 
+			
+			var modelRelationship = getObjPointer( master.model, modelRelationshipConnector.parentID );
+			if( modelRelationship == undefined ){
+				throwError( 'rule.js', 'createRule', 'The parentID, ' + modelRelationshipConnector.parentID + ', does not exist in the model' );
+			}
+			modelRelationship = cloneJSON( modelRelationship );
+			
+			delete modelRelationship.ModelRelationshipConnectors[ getPointerUUID( modelRelationshipConnector.id ) ].modelRuleConditions[ existsRef ];
+			
+			actions[ actions.length ] = {	
+				"objectID" : modelRelationship.id,
+				"commandType" : "update",
+				"value" : modelRelationship
+			}; 
+			
+			visualActions = master.canvas.rule.deleteModelRuleConndition( aModelRuleCon );
+		}
+	} else {
+		var modelRuleConUUID = uuid.v4();
+		var modelRuleCon = cloneJSON( this.ruleConditionTempalte );
+		modelRuleCon.id = modelRule.id + '/ModelRuleConditions/' + modelRuleConUUID;
+		modelRuleCon.parentID = modelRule.id;
+		modelRuleCon.ModelRelationshipConnectorID = modelRelationshipConnector.id;
+		
+		modelRule.ModelRuleConditions[ modelRuleConUUID ] = modelRuleCon;
+		
+		actions[ actions.length ] = actions[ actions.length ] = {	
+			"objectID" : modelRule.id,
+			"commandType" : "update",
+			"value" : modelRule
+		}; ;
+		
+		var modelRelationship = getObjPointer( master.model, modelRelationshipConnector.parentID );
+		if( modelRelationship == undefined ){
+			throwError( 'rule.js', 'createRule', 'The parentID, ' + modelRelationshipConnector.parentID + ', does not exist in the model' );
+		}
+		modelRelationship = cloneJSON( modelRelationship );
+		
+		modelRelationship.ModelRelationshipConnectors[ getPointerUUID( modelRelationshipConnector.id ) ].modelRuleConditions[ modelRuleConUUID ] = modelRuleCon.id;
+		
+		actions[ actions.length ] = {	
+			"objectID" : modelRelationship.id,
+			"commandType" : "update",
+			"value" : modelRelationship
+		}
+		
+		visualActions = master.canvas.rule.insertModelRuleConndition( modelRuleCon );
+	}
+	
+	try{
+		var trans = master.transaction.createTransaction( "Model", actions );
+		
+		var trans = master.transaction.createTransaction( "VisualModel", visualActions, trans );
+		
+		master.transaction.processTransactions( trans );
+	}catch(err){
+		throwError( 'line.js', 'createLine', err.message, false );
+		return;
 	}
 }
+
+
 /*	deleteRule: takes an _id to a rule and  creates the nessisary action to 
  * 	delete it and any connections to it in model relationships. You may
  * 	optionally a collection of objects (_integrateWith) that you are already

@@ -228,8 +228,8 @@ CanvasRule.prototype.createRule = function( _modelRule ){
 			"value" : aVisualPredicate
 		};
 		
-		aX[ aX.length ] = aVisualPredicate.attr.x + ( aVisualRole.attr.width / 2 );
-		aY[ aY.length ] = aVisualPredicate.attr.y + ( aVisualRole.attr.height / 2);
+		aX[ aX.length ] = aVisualPredicate.attr.x + aVisualRole.attr.x + ( aVisualRole.attr.width / 2 );
+		aY[ aY.length ] = aVisualPredicate.attr.y + aVisualRole.attr.y + ( aVisualRole.attr.height / 2);
 	}
 	}
 	
@@ -252,6 +252,147 @@ CanvasRule.prototype.createRule = function( _modelRule ){
 	actions[ actions.length ] = {	
 		"objectID" : visualRule.id,
 		"commandType" : "insert",
+		"value" : visualRule
+	};
+	
+	return actions;
+}
+
+CanvasRule.prototype.deleteModelRuleConndition = function( _modelRuleCondition ){
+	var visualRule = this.findRuleByModelID( _modelRuleCondition.parentID );
+	if( visualRule == undefined ){
+		console.log( 'The modelID' + _modelRuleCondition.parentID + ' does not exist on the viusl model, no action taken.' )
+		return;
+	}
+	visualRule = cloneJSON( visualRule );
+	
+	actions = [];
+	
+	visualRuleCircle = this.getVisualRuleCircle( visualRule );
+	if( visualRuleCircle == undefined ){
+		throwError( 'canvas.rule.js', 'deleteModelRuleConndition', 'The visual group, ' + visualRule.id + ', does not contain a rule circle.' );
+	}
+	
+	for( var ref in visualRuleCircle.links ){
+	if( ref !== 'empty' ){
+		var aVisualLink = getObjPointer( master.model, visualRuleCircle.links[ ref ] );
+		if( aVisualLink == undefined ){
+			throwError( 'canvas.rule.js', 'deleteModelRuleConndition', 'The visual link, ' + visualRuleCircle.links[ ref ] + ', does not exist in the model.' );
+		}
+		
+		if( aVisualLink.modelID === _modelRuleCondition.ModelRelationshipConnectorID ){
+			break;
+		}
+	}
+	}
+	
+	if( aVisualLink.modelID !== _modelRuleCondition.ModelRelationshipConnectorID ){
+		throwError( 'canvas.rule.js', 'deleteModelRuleConndition', 'The none of the links off of the rule circle, ' + visualRuleCircle.id + ', match the model rule condition ModelRelationshipConnectorID to be deleted.' );
+	}
+	
+	//A side is always the predicate, so the zSide in this case must be the rule, which we already have
+	var visualObject = getObjPointer( master.model, aVisualLink.aSide );
+	if( visualObject == undefined ){
+		throwError( 'canvas.rule.js', 'deleteModelRuleConndition', 'The visual object, ' + aVisualLink.aSide + ', does not exist in the model.' );
+	}
+	
+	var visualGroup = getObjPointer( master.model, visualObject.parentID );
+	if( visualGroup == undefined ){
+		throwError( 'canvas.rule.js', 'deleteModelRuleConndition', 'The parent id, ' + visualObject.parentID + ', does not exist in the model.' );
+	}
+	visualGroup = cloneJSON( visualGroup );
+	
+	delete visualGroup.objects[ getPointerUUID( visualObject.id ) ].links[ getPointerUUID( aVisualLink.id ) ];
+	
+	actions[ actions.length ] = {	
+		"objectID" : visualGroup.id,
+		"commandType" : "update",
+		"value" : visualGroup
+	};
+	
+	delete visualRule.objects[ getPointerUUID( visualRuleCircle.id ) ].links[ getPointerUUID( aVisualLink.id ) ];
+	
+	actions[ actions.length ] = {	
+		"objectID" : visualRule.id,
+		"commandType" : "update",
+		"value" : visualRule
+	};
+	
+	actions[ actions.length ] = {	
+		"objectID" : aVisualLink.id,
+		"commandType" : "delete",
+		"value" : null
+	};
+	
+	return actions;
+}
+
+CanvasRule.prototype.insertModelRuleConndition = function( _modelRuleCondition ){
+	var visualRule = this.findRuleByModelID( _modelRuleCondition.parentID );
+	if( visualRule == undefined ){
+		console.log( 'The modelID' + _modelRuleCondition.parentID + ' does not exist on the viusl model, no action taken.' )
+		return;
+	}
+	visualRule = cloneJSON( visualRule );
+	
+	actions = [];
+	
+	visualRuleCircle = this.getVisualRuleCircle( visualRule );
+	if( visualRuleCircle == undefined ){
+		throwError( 'canvas.rule.js', 'insertModelRuleConndition', 'The visual group, ' + visualRule.id + ', does not contain a rule circle.' );
+	}
+	
+	var modelRelationshipConn = getObjPointer( master.model, _modelRuleCondition.ModelRelationshipConnectorID );
+	if( modelRelationshipConn == undefined ){
+		throwError( 'canvas.rule.js', 'insertModelRuleConndition', 'The model relationship connector , ' + _modelRuleCondition.ModelRelationshipConnectorID + ', does not exists in the model.' );
+	}
+	
+	var visualRelationship = this.findRuleByModelID( modelRelationshipConn.parentID );
+	if( visualRelationship == undefined ){
+		throwError( 'canvas.rule.js', 'insertModelRuleConndition', 'The modelID' + _modelRuleCondition.parentID + ' does not exist on the viusl model, no action taken.' );
+	}
+	visualRelationship = cloneJSON( visualRelationship );
+	
+	var visualRelationshipConn = null;
+	for( var ref in visualRelationship.objects ){
+	if( ref !== 'empty' ){
+		visualRelationshipConn = visualRelationship.objects[ ref ]
+		
+		if( visualRelationshipConn.modelID === modelRelationshipConn.id ){
+			break;
+		}
+	}
+	}
+	if( visualRelationshipConn.modelID !== modelRelationshipConn.id ){
+		throwError( 'canvas.rule.js', 'insertModelRuleConndition', 'The modelID, ' + modelRelationshipConn.id + ' does not exist within the visual group, ' + visualRelationship.id + '.' );
+	}
+	
+	var visualLineUUID = uuid.v4();
+	var visualLine = cloneJSON( master.canvas.line.lineTemplate )
+	visualLine.id = 'VisualModel/links/' + visualLineUUID;
+	visualLine.modelID = modelRelationshipConn.id;
+	visualLine.aSide = visualRelationshipConn.id;
+	visualLine.zSide = visualRuleCircle.id;
+	
+	actions[ actions.length ] = {	
+		"objectID" : visualLine.id,
+		"commandType" : "insert",
+		"value" : visualLine
+	};
+	
+	visualRelationship.objects[ getPointerUUID( visualRelationshipConn.id ) ].links[ visualLineUUID ] = visualLine.id;
+	
+	actions[ actions.length ] = {	
+		"objectID" : visualRelationship.id,
+		"commandType" : "update",
+		"value" : visualRelationship
+	};
+	
+	visualRule.objects[ getPointerUUID( visualRuleCircle.id ) ].links[ visualLineUUID ] = visualLine.id;
+	
+	actions[ actions.length ] = {	
+		"objectID" : visualRule.id,
+		"commandType" : "update",
 		"value" : visualRule
 	};
 	
@@ -306,7 +447,11 @@ CanvasRule.prototype.markSide = function( _id ){
 	  	master.canvas.lineLayer.add( guideLine );
 	  	
 	  	//Move side connected to an object so that it behaves just like a perminate line
-	  	moveLineSide( guideLine, canvasShape, 'a', undefined );
+	  	if( canvasShape.getClassName() === 'Rect' ){
+  			moveLineSide( guideLine, canvasShape, 'a', undefined );
+  		} else {
+  			moveLineSideSimple( guideLine, canvasShape, 'a' );
+  		}
 	  	
 	  	master.canvas.lineLayer.draw();
 	  	
@@ -320,7 +465,11 @@ CanvasRule.prototype.markSide = function( _id ){
 	  		points[points.length-3] = mouse.y;
 	  		points[points.length-2] = mouse.x;
 	  		points[points.length-1] = mouse.y;
-	  		moveLineSide( guideLine, canvasShape, 'a', undefined );
+	  		if( canvasShape.getClassName() === 'Rect' ){
+	  			moveLineSide( guideLine, canvasShape, 'a', undefined );
+	  		} else {
+	  			moveLineSideSimple( guideLine, canvasShape, 'a' );
+	  		}
 	  		master.canvas.lineLayer.draw();
 	  	});
 	  	
@@ -375,6 +524,51 @@ CanvasRule.prototype.markSide = function( _id ){
 	}
 }
 
+/*	findRuleByModelID: takes a model ID and returns the visualModel object
+ * 	associated with it.
+ * 
+ * 	Params:
+ * 	_id: valid id to an object in the model
+ * 
+ * 	Returns (object):
+ * 	retunrs visualModel object associated with the object
+ */
+CanvasRule.prototype.findRuleByModelID = function( _id ){
+	var visualGroups = master.model.VisualModel.groups;
+	
+	/*	Loop through groups in the visual model and return the group 
+	 * 	associated with the passed modelID
+	 */
+	for( var ref in visualGroups ){
+		aRule = visualGroups[ref];
+		
+		if( aRule.modelID != undefined && aRule.modelID === _id ){
+			return aRule;
+		}
+	}
+	
+	//If no match was found return undefined
+	return undefined;
+}
+
+CanvasRule.prototype.getVisualRuleCircle = function( _visualRule ){
+	var visualRuleCircle = null;
+	for( var ref in _visualRule.objects ){
+	if( ref !== 'empty' ){
+		visualRuleCircle = _visualRule.objects[ ref ]
+		
+		if( visualRuleCircle.type === 'ruleCircle' ){
+			break;
+		}
+	}
+	}
+	
+	if( visualRuleCircle.type === 'ruleCircle' )
+		return visualRuleCircle;
+		
+	return undefined;
+}  
+
 /*	toggleCreateListener: if we're in rule creation context set back to 
  * 	standard context, otherwise set to rule creation context
  */
@@ -397,7 +591,7 @@ CanvasRule.prototype.open = function(){
 		var visualGroup = master.model.VisualModel.groups[ ref ];
 		
 		//If object is not entity, value, or predicate (in practice not a comment) set it up to interact with rule tool
-		if( visualGroup.type === 'predicate' ){
+		if( visualGroup.type === 'predicate' || master.rule.ruleTypes[ visualGroup.type ] === true ){
 			this.openAGroup( visualGroup.id );	
 		}
 	}
@@ -413,6 +607,13 @@ CanvasRule.prototype.openAGroup = function( _id ){
 	var canvasGroup = master.canvas.stage.find( '#' + _id );
 	var visualGroup = getObjPointer( master.model, _id ); 
 	
+	if(  master.rule.ruleTypes[ visualGroup.type ] === true ){
+		var visualRuleCircle = this.getVisualRuleCircle( visualGroup );
+		if( visualRuleCircle == undefined ){  
+			return;
+		}
+	}
+	
 	if( canvasGroup.length > 0 ){
 		canvasGroup = canvasGroup[0];
 		
@@ -422,7 +623,7 @@ CanvasRule.prototype.openAGroup = function( _id ){
 		//Loop though all of the children in each group
 		canvasGroup.getChildren().each( function( shape, n ){
 			//if the child object is a rectangle
-			if( shape.getClassName() === 'Rect' ){
+			if( ( visualGroup.type === 'predicate' && shape.getClassName() === 'Rect' ) || ( master.rule.ruleTypes[ visualGroup.type ] === true && shape.id() === visualRuleCircle.id ) ){
 				//remove all listeners to avoid creating duplicates
 				shape.off( 'ruleObjSelect' )
 				
@@ -449,10 +650,17 @@ CanvasRule.prototype.close = function(){
 	for( var ref in master.model.VisualModel.groups ){
 		var visualGroup = master.model.VisualModel.groups[ ref ];
 		
-		if( visualGroup.type === 'predicate' ){
+		if(  master.rule.ruleTypes[ visualGroup.type ] === true ){
+			var visualRuleCircle = this.getVisualRuleCircle( visualGroup );
+			if( visualRuleCircle == undefined ){  
+				return;
+			}
+		}
+		
+		if( visualGroup.type === 'predicate' || master.rule.ruleTypes[ visualGroup.type ] === true ){
 			for( ref in visualGroup.objects ){
 				var aVisualObject = visualGroup.objects[ ref ];
-				if( aVisualObject.className === 'Rect' ){
+				if( ( visualGroup.type === 'predicate' && aVisualObject.className === 'Rect' ) || ( master.rule.ruleTypes[ visualGroup.type ] === true && aVisualObject.id === visualRuleCircle.id ) ){
 					this.restoreGroup( aVisualObject.id );
 					
 					var canvasShape = master.canvas.stage.find( '#' + aVisualObject.id );	

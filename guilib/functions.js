@@ -81,10 +81,10 @@ function getPointerUUID( _pointer ){
 	var id = _pointer;
 	var found = false;
 	var i = id.length - 1;
-	while( id[i] != '/' && i > -1 )
+	while( id[i] !== '/' && i > -1 )
 		i--;
 		
-	if( id[i] == '/' ){
+	if( id[i] === '/' ){
 		id = id.substring( i + 1 );
 		return id;
 	}

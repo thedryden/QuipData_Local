@@ -497,7 +497,7 @@ CanvasORMObj.prototype.openEditName = function( _id ){
 	//Function to detect new width and adjust size of object as nessisary
 	var keypress = function(){
 		var min = maxWidth;
-		var width = canvasTextWidth() + 10;
+		var width = canvasTextWidth() + 20;
 		if( width > min ){
 			var obj = master.canvas.stage.find( '#' + rect.attr.id )[0];
 			obj.width( width );

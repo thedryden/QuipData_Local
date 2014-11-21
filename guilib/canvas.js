@@ -362,9 +362,13 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 		}
 	} else {
 	//Block to perform for both inserts and updates
-	if( typeof master.line.active === 'boolean' && master.line.active && visualObj.type === 'predicate' ){
-		this.line.openAGroup( visualObj.id );
-	}
+		if( master.line.active === true && visualObj.type === 'predicate' ){
+			this.line.openAGroup( visualObj.id );
+		}
+		
+		if( master.rule.active === true && master.rule.ruleTypes[ visualObj.type ] === true ){
+			this.rule.openAGroup( visualObj.id );
+		}
 	
 		//If there are group level functions to call, call them
 		if( visualObj.functions != undefined && visualObj.functions != '' ){

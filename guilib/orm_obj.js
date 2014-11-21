@@ -184,16 +184,16 @@ ORMOBJ.prototype.deleteObj = function( _ids ){
 		}
 	}
 	
-	//try{
+	try{
 		var trans = master.transaction.createTransaction( "Model", modelActions );
 		
 		var trans = master.transaction.createTransaction( "VisualModel", visualActions, trans );
 		
 		master.transaction.processTransactions( trans );
-	/*}catch(err){
+	}catch(err){
 		throwError( 'orm_obj.js', 'deleteObj', err.message, false );
 		return;
-	}*/
+	}
 }
 
 ORMOBJ.prototype.editName = function( _id, _value ){
