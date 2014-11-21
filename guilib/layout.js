@@ -98,11 +98,6 @@ function openCanvasText( _x, _y, _defaultText, _closeOnEnter, _closeOnClick, _on
 		_y = parseInt( _y );
 	}
 		
-	var width = parseInt( stripChar( $('#canvas_text').css('width') ) );
-	var height = parseInt( stripChar( $('#canvas_text').css('height') ) );
-	
-	//_x -= ( width / 2 );
-		
 	$('#canvas_text').css({
 			top: _y,
 			left: _x
@@ -110,8 +105,20 @@ function openCanvasText( _x, _y, _defaultText, _closeOnEnter, _closeOnClick, _on
 		.val( _defaultText )
 		.show()
 		.focus()
+		
+	var width = canvasTextWidth();
+	width = ( width < 20 ) ? 20 : width + 20;
 	
-	if( _onKeypress && typeof _onKeypress === 'function' ){
+	$('#canvas_text').width( width );
+	
+	$('#canvas_text').on( 'keydown.canvasTextWidth', function(){
+		var width = canvasTextWidth();
+		width = ( width < 20 ) ? 20 : width + 20;
+	
+		$('#canvas_text').width( width );
+	});
+	
+	if( typeof _onKeypress === 'function' ){
 		$('#canvas_text').on( 'keydown.canvasText', _onKeypress );
 	}
 	
@@ -148,6 +155,7 @@ function closeCanvasText(){
 	canvasTextOnCloseCallback = null;
 	
 	$('#canvas_text').off( '.canvasText' );
+	$('#canvas_text').off( '.canvasTextWidth' );
 	$("html").off( '.canvasText' );
 }
 

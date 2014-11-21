@@ -741,6 +741,48 @@ CanvasORMObj.prototype.createSyncAction = function( _id ){
 	return visualActions;
 }
 
+CanvasORMObj.prototype.massAddOneObject = function( _type, name, _modelID, _totalXY ){
+	var aVisualAction = master.canvas.ormObj.addObj( _type, _modelID, _totalXY.x, _totalXY.y );
+	
+	var rectAction = null;
+	for( var ref in aVisualAction['value']['objects'] ){
+		rectAction = aVisualAction['value']['objects'][ ref ];
+		break;
+	}
+	
+	var y = rectAction.attr.height;
+	var x = rectAction.attr.width;
+	
+	_totalXY.y += y + 10;
+	if( ( _totalXY.y + y ) > master.canvas.height ){
+		_totalXY.y = 10;
+		_totalXY.y += x + 10;
+	}
+	
+	var objID = uuid.v4();
+	
+	var nameAttr = cloneJSON( master.canvas.ormObj.nameTempalte );
+	nameAttr.text = name;
+	nameAttr.id = aVisualAction['value'].id + "/objects/" + objID;
+	nameAttr.y *= rectAction.attr.height;
+	
+	var canvasName = new Kinetic.Text( nameAttr );
+	rectAction.attr.width = ( canvasName.getWidth() + 10 > rectAction.attr.width ) ? canvasName.getWidth() + 10 : rectAction.attr.width; 
+	
+	aVisualAction.value.objects[objID] = {
+	    "id": aVisualAction.value.id + "/objects/" + objID,
+	    "modelID": aVisualAction['value'].modelID + '/name',
+	    "parentID" : aVisualAction.value.id,
+	    "className": "Text",
+	    "attr": nameAttr,
+	    "type": "name",
+	    "functions": {},
+	    "links": {"empty":""}
+	}
+	
+	return aVisualAction;
+}
+
 CanvasORMObj.prototype.deleteObj = function( _id, _integrateWith ){
 	var aVisualGroup = getObjPointer( master.model, _id );	
 	if( aVisualGroup == undefined ){
@@ -752,7 +794,7 @@ CanvasORMObj.prototype.deleteObj = function( _id, _integrateWith ){
 	}
 	
 	actions = [];
-	
+	 
 	actions[ actions.length ] = { 
 		"objectID" : _id,
 		"commandType" : "delete",

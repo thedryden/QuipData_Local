@@ -345,12 +345,15 @@ ORMOBJ.prototype.closeMassAdd = function(){
 	$('#wandering_mass_add').off( 'keydown.massAdd' );
 }
 
+//This contains visualAction but not kinetic text, visual action code should probally be moved to canvas.orm_obj.js
 ORMOBJ.prototype.massAdd = function(){
 	var actions = [];
 	var visualActions = [];
 	
-	var totalY = 10;
-	var totalX = 10;
+	var totalXY = {
+		"y" : 10,
+		"x" : 10
+	}
 	
 	for( var i = 1; i <= this.massAddObjectCount; i++ ){
 		var newModelID = uuid.v4();
@@ -362,12 +365,8 @@ ORMOBJ.prototype.massAdd = function(){
 	
 			if( type === 'entity' ){
 				var aAction = cloneJSON( this.entityTemplate );
-				var y = master.canvas.ormObj.entityTemplate.height;
-				var x = master.canvas.ormObj.entityTemplate.width;
 			} else if( type === 'value' ) {
 				var aAction = cloneJSON( this.valueTemplate );
-				var y = master.canvas.ormObj.valueTemplate.height;
-				var x = master.canvas.ormObj.valueTemplate.width;
 			}
 			
 			if( !aAction ){
@@ -379,37 +378,8 @@ ORMOBJ.prototype.massAdd = function(){
 			aAction.value.id = "Model/Model/ModelObjects/" + newModelID;
 			aAction.value.name = name;
 			
-			var aVisualAction = master.canvas.ormObj.addObj( type, newModelID, totalX, totalY );
 			
-			totalY += y + 10;
-			if( ( totalY + y ) > master.canvas.height ){
-				totalY = 10;
-				totalX += x + 10;
-			}
-			
-			var rectAction = null;
-			for( var ref in aVisualAction['value']['objects'] ){
-				rectAction = aVisualAction['value']['objects'][ ref ];
-				break;
-			}
-			
-			var objID = uuid.v4();
-			
-			var nameAttr = cloneJSON( master.canvas.ormObj.nameTempalte );
-			nameAttr.text = name;
-			nameAttr.id = aVisualAction['value'].id + "/objects/" + objID;
-			nameAttr.y *= rectAction.attr.height;
-			
-			aVisualAction.value.objects[objID] = {
-			    "id": aVisualAction.value.id + "/objects/" + objID,
-			    "modelID": aVisualAction['value'].modelID + '/name',
-			    "parentID" : aVisualAction.value.id,
-			    "className": "Text",
-			    "attr": nameAttr,
-			    "type": "name",
-			    "functions": {},
-			    "links": {"empty":""}
-			}
+			var aVisualAction = master.canvas.ormObj.massAddOneObject( type, name, newModelID, totalXY )
 			
 			actions[ actions.length ] = aAction;
 			visualActions[ visualActions.length ] = aVisualAction;
