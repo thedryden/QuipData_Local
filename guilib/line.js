@@ -28,26 +28,7 @@ function Line(){
 		"modelRuleConditions" : { "empty" : "" },
 	}
 	
-	this.ruleTempalte = {	
-		"objectID" : "Model/Model/ModelRules/UUID",
-		"commandType" : "insert",
-		"value" : {
-			"id" : "Model/Model/ModelRules/UUID",
-			"type" : "",
-			"ModelRuleConditions" : { "empty" : "" }
-		}
-	}
-	
-	this.ruleConditionTempalte = {
-		"id" : "Model/Model/ModelRules/parentUUID/ModelRuleConditions/UUID",
-		"parentID" : "Model/Model/ModelRules/parentUUID",
-		"ModelRelationshipConnectorID" : "Model/Model/ModelRelationships/parentUUID/ModelRelationshipConnectors/UUID"
-	}
-	
-	this.ruleIDRegEx = /Model\/Model\/ModelRules/;
 	this.relationshipIDRegEx = /Model\/Model\/ModelRelationships/;
-	
-	this.uniqueTypes = { "primary unique" : true, "unique" : true, "primary unique many-to-many" : true, "unique many-to-many" : true };
 }
 
 Line.prototype.createLine = function( _modelID1, _modelID2 ){
@@ -259,7 +240,7 @@ Line.prototype.saveEditPredicate = function(){
 				var inside = this.ruleInsidePred( aModelRule, fullPred );
 				
 				if( inside === true ){
-					var tempActions = this.deleteRule( aModelRule.id, integrate );
+					var tempActions = master.rule.deleteRule( aModelRule.id, integrate );
 					
 					for( var ai = 0; ai < tempActions.length; ai++ ){
 						if( tempActions[ ai ].objectID === aModelRule.id ){
@@ -311,7 +292,7 @@ Line.prototype.saveEditPredicate = function(){
 				searched[ searched.length ] = aModelRule.id;
 				
 				//If the type is for a kind of unique
-				if( this.uniqueTypes[ aModelRule.type ] === true ){
+				if( this.uniqueTypes[ aModelRule.type ] === true ){	
 					var found = false;
 					for( var ref in uniques ){
 						if( this.uniqueRuleAndUniqueEqual( aModelRule, uniques[ ref ].uniques, data ) ){
@@ -324,7 +305,7 @@ Line.prototype.saveEditPredicate = function(){
 						var inside = this.ruleInsidePred( aModelRule, fullPred );
 						
 						if( inside === true ){
-							var tempActions = this.deleteRule( aModelRule.id, integrate );
+							var tempActions = master.rule.deleteRule( aModelRule.id, integrate );
 					
 							for( var ai = 0; ai < tempActions.length; ai++ ){
 								if( tempActions[ ai ].objectID === aModelRule.id ){
@@ -408,12 +389,12 @@ Line.prototype.saveEditPredicate = function(){
 				var parentID = uuid.v4();
 				var childID = uuid.v4();
 				
-				var modelRule = cloneJSON( this.ruleTempalte );
+				var modelRule = cloneJSON( master.rule.ruleTempalte );
 				modelRule.objectID = modelRule.objectID.replace( 'UUID', parentID );
 				modelRule.value.id = modelRule.objectID;
 				modelRule.value.type ='required';
 				
-				var modelRuleCondition = cloneJSON( this.ruleConditionTempalte );
+				var modelRuleCondition = cloneJSON( master.rule.ruleConditionTempalte );
 				modelRuleCondition.parentID = modelRule.value.id;
 				modelRuleCondition.id = modelRuleCondition.id.replace( 'parentUUID', parentID );
 				modelRuleCondition.id = modelRuleCondition.id.replace( 'UUID', childID );
@@ -451,7 +432,7 @@ Line.prototype.saveEditPredicate = function(){
 					
 					//If found equal true then delete
 					if( inside === true ){
-						var tempActions = this.deleteRule( aModelRule.id, integrate );
+						var tempActions = master.rule.deleteRule( aModelRule.id, integrate );
 					
 						for( var ai = 0; ai < tempActions.length; ai++ ){
 							if( tempActions[ ai ].objectID === aModelRule.id ){
@@ -488,7 +469,7 @@ Line.prototype.saveEditPredicate = function(){
 		if( exists === false ){
 			var parentID = uuid.v4();
 			
-			modelRule = cloneJSON( this.ruleTempalte );
+			modelRule = cloneJSON( master.rule.ruleTempalte );
 			modelRule.objectID = modelRule.objectID.replace( 'UUID', parentID );
 			modelRule.value.id = modelRule.objectID;
 			var tempType = ( aUnique.primary === true ) ? "primary " : "";
@@ -498,7 +479,7 @@ Line.prototype.saveEditPredicate = function(){
 			for( var i = 0; i < aUnique.uniques.length; i++ ){
 				var childID = uuid.v4();
 				
-				var modelRuleCondition = cloneJSON( this.ruleConditionTempalte );
+				var modelRuleCondition = cloneJSON( master.rule.ruleConditionTempalte );
 				modelRuleCondition.parentID = modelRule.value.id;
 				modelRuleCondition.id = modelRuleCondition.id.replace( 'parentUUID', parentID );
 				modelRuleCondition.id = modelRuleCondition.id.replace( 'UUID', childID );
@@ -540,7 +521,7 @@ Line.prototype.saveEditPredicate = function(){
 	
 	var modelRules = {};
 	for( i = 0; i < actions.length; i++ ){
-		if( actions[i].objectID.match( this.ruleIDRegEx ) ){
+		if( actions[i].objectID.match( master.rule.ruleIDRegEx ) ){
 			modelRules[ actions[i].objectID ] = ( actions[i].commandType === 'delete' ) ? false : actions[i].value;	
 		}
 	}
@@ -591,83 +572,10 @@ Line.prototype.uniqueRuleAndUniqueEqual = function( _aRule, _aUnique, _data ){
 	return false;
 }
 
-/*	deleteRule: takes an _id to a rule and  creates the nessisary action to 
- * 	delete it and any connections to it in model relationships. You may
- * 	optionally a collection of objects (_integrateWith) that you are already
- * 	working with so that any changes to these objects are made to the copy
- * 	you are already working with.
- * 
- * 	Params:
- * 	_id(string) : id of the rule you wish to delete.
- * 	_integrateWith(object) : collection of objects you are already working with.
- * 	ALL of these objects must be clones so that we don't modify the model directly.
- * 	Format for the collection is for the ID to be the object's ID and the value to
- * 	be the object.
- * 
- * 	Returns:
- * 	Transaction actions.
- */
-Line.prototype.deleteRule = function( _id, _integrateWith ){
-	var aModelRule = getObjPointer( master.model, _id );	
-	if( aModelRule == undefined ){
-		throwError( 'line.js', 'deleteRule', 'The passed _id, ' + _id + ', does not exist in the model' );
-	}
-	
-	if( typeof _integrateWith !== 'object' ){
-		_integrateWith = {};
-	}
-	
-	actions = [];
-	
-	actions[ actions.length ] = { "objectID" : aModelRule.id,
-		"commandType" : "delete",
-		"value": null
-	}
-	
-	for( var ref in aModelRule.ModelRuleConditions ){
-	if( ref !== 'empty' ){
-		var aModelRuleCond = aModelRule.ModelRuleConditions[ ref ];
-	
-		var aModelRelationshipCon = getObjPointer( master.model, aModelRuleCond.ModelRelationshipConnectorID );	
-		if( aModelRelationshipCon == undefined ){
-			throwError( 'line.js', 'deleteRule', 'The passed a model Relationship Connector ID, ' + aModelRuleCond.ModelRelationshipConnectorID + ', does not exist in the model' );
-		}
-		
-		if( typeof _integrateWith[ aModelRelationshipCon.parentID ] === 'undefined' ){
-			var aModelRelationship = getObjPointer( master.model, aModelRelationshipCon.parentID );	
-			if( aModelRelationship == undefined ){
-				throwError( 'line.js', 'deleteRule', 'The passed a model Parent ID, ' + aModelObjectCon.parentID + ', does not exist in the model' );
-			}
-			var aModelRelationship = cloneJSON( aModelRelationship );
-			
-			_integrateWith[ aModelRelationship.id ] = aModelRelationship;
-		} else{
-			var aModelRelationship = _integrateWith[ aModelRelationshipCon.parentID ]
-		}
-		
-		var aModelRelationshipConUUID = getPointerUUID( aModelRelationshipCon.id );
-		
-		delete aModelRelationship.ModelRelationshipConnectors[ aModelRelationshipConUUID ].modelRuleConditions[ ref ]
-	}
-	}
-	
-	for( var ref in _integrateWith ){
-		var aObj = _integrateWith[ ref ]; 
-		
-		actions[ actions.length ] = {
-			"objectID" : aObj.id,
-			"commandType" : "update",
-			"value" : aObj
-		}
-	}
-	
-	return actions;
-}
-
 Line.prototype.deleteRelationship = function( _id, _integrateWith ){
 	var aModelRelationship = getObjPointer( master.model, _id );	
 	if( aModelRelationship == undefined ){
-		throwError( 'line.js', 'deleteRule', 'The passed _id, ' + _id + ', does not exist in the model' );
+		throwError( 'line.js', 'deleteRelationship', 'The passed _id, ' + _id + ', does not exist in the model' );
 	}
 	
 	if( typeof _integrateWith !== 'object' ){
@@ -689,13 +597,13 @@ Line.prototype.deleteRelationship = function( _id, _integrateWith ){
 		if( ruleConRef !== 'empty' ){
 			var aModelRuleCon = getObjPointer( master.model, ModelRelationshipConnectors.modelRuleConditions[ ruleConRef ] );
 			if( aModelRuleCon == undefined ){
-				throwError( 'line.js', 'deleteRule', 'The model relationship model rule condition id, ' + ModelRelationshipConnectors.modelRuleConditions[ ruleConRef ] + ', does not exist in the model' );
+				throwError( 'line.js', 'deleteRelationship', 'The model relationship model rule condition id, ' + ModelRelationshipConnectors.modelRuleConditions[ ruleConRef ] + ', does not exist in the model' );
 			}
 			
 			if( typeof _integrateWith[ aModelRuleCon.parentID ] === 'undefined' ){
 				var aModelRule = getObjPointer( master.model, aModelRuleCon.parentID );	
 				if( aModelRule == undefined ){
-					throwError( 'line.js', 'deleteRule', 'The parent id, ' + aModelRuleCon.parentID + ', does not exist in the model' );
+					throwError( 'line.js', 'deleteRelationship', 'The parent id, ' + aModelRuleCon.parentID + ', does not exist in the model' );
 				}
 				var aModelRule = cloneJSON( aModelRule );
 				
@@ -720,7 +628,7 @@ Line.prototype.deleteRelationship = function( _id, _integrateWith ){
 			if( typeof _integrateWith[ ModelRelationshipConnectors.objectID ] === 'undefined' ){
 				var aModelObject = getObjPointer( master.model, ModelRelationshipConnectors.objectID );	
 				if( aModelObject == undefined ){
-					throwError( 'line.js', 'deleteRule', 'The passed a model Object ID, ' + ModelRelationshipConnectors.objectID + ', does not exist in the model' );
+					throwError( 'line.js', 'deleteRelationship', 'The passed a model Object ID, ' + ModelRelationshipConnectors.objectID + ', does not exist in the model' );
 				}
 				var aModelObject = cloneJSON( aModelObject );
 				

@@ -777,10 +777,17 @@ CanvasORMObj.prototype.deleteObj = function( _id, _integrateWith ){
 				aVisualLink = _integrateWith[ aVisualObject.links[ ref ] ];
 			}
 			
-			if( aVisualGroup.type === 'predicate' ){
-				var aVisualLinkObj = getObjPointer( master.model, aVisualLink.zSide );	
-				if( aVisualLinkObj == undefined ){
-					throwError( 'canvas.orm_obj.js', 'deleteObj', 'The object id, ' + aVisualLink.zSide + ', does not exist in the visual model' );
+			if( aVisualGroup.type === 'predicate' || master.rule.ruleTypes[ aVisualGroup.type ] === true ){
+				if( aVisualGroup.type === 'predicate' ){
+					var aVisualLinkObj = getObjPointer( master.model, aVisualLink.zSide );	
+					if( aVisualLinkObj == undefined ){
+						throwError( 'canvas.orm_obj.js', 'deleteObj', 'The object id, ' + aVisualLink.zSide + ', does not exist in the visual model' );
+					}	
+				} else {
+					var aVisualLinkObj = getObjPointer( master.model, aVisualLink.aSide );	
+					if( aVisualLinkObj == undefined ){
+						throwError( 'canvas.orm_obj.js', 'deleteObj', 'The object id, ' + aVisualLink.aSide + ', does not exist in the visual model' );
+					}
 				}
 				
 				if( typeof _integrateWith[ aVisualLinkObj.parentID ] === 'undefined' ){

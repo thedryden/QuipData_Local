@@ -133,8 +133,8 @@ ORMOBJ.prototype.deleteObj = function( _ids ){
 			var tempActions = this.deleteAObj( _ids[i], integrated  );
 		} else if ( _ids[i].match( master.line.relationshipIDRegEx ) ){
 			var tempActions = master.line.deleteRelationship( _ids[i], integrated  );
-		} else if ( _ids[i].match( master.line.ruleIDRegEx ) ){
-			var tempActions = master.line.deleteRelationship( _ids[i], integrated  );
+		} else if ( _ids[i].match( master.rule.ruleIDRegEx ) ){
+			var tempActions = master.rule.deleteRule( _ids[i], integrated  );
 		}
 		
 		for( var j = 0; j < tempActions.length; j++ ){

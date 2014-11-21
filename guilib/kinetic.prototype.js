@@ -75,7 +75,7 @@ Kinetic.Group.prototype.getInteractiveWidth = function(){
 }
 
 Kinetic.Group.prototype.getTrueX = function(){
-	var output = this.x();
+	var output = this.x() - ( this.offsetX() / 2 );
 	
 	var child = this;
 	while( child.getParent().getType() == 'Group' ){
@@ -93,7 +93,7 @@ Kinetic.Group.prototype.getCenterX = function(){
 }
 
 Kinetic.Group.prototype.getTrueY = function(){
-	var output = this.y();
+	var output = this.y() - ( this.offsetY() / 2 );
 	
 	var child = this;
 	while( child.getParent().getType() == 'Group' ){
@@ -112,7 +112,7 @@ Kinetic.Group.prototype.getCenterY = function(){
 
 /*	*** Rect Prototypes *** */
 Kinetic.Rect.prototype.getTrueX = function(){
-	var output = this.x();
+	var output = this.x() - ( this.offsetX() / 2 );
 	
 	var child = this;
 	while( child.getParent().getType() == 'Group' ){
@@ -130,7 +130,7 @@ Kinetic.Rect.prototype.getCenterX = function(){
 }
 
 Kinetic.Rect.prototype.getTrueY = function(){
-	var output = this.y();
+	var output = this.y() - ( this.offsetY() / 2 );
 	
 	var child = this;
 	while( child.getParent().getType() == 'Group' ){
@@ -284,7 +284,7 @@ Kinetic.Line.prototype.getCenterY = function(){
 
 /*	*** Circle Prototypes *** */
 Kinetic.Circle.prototype.getTrueX = function(){
-	var output = this.x() - ( this.radius() / 2 );
+	var output = this.x() - ( this.radius() / 2 ) - ( this.offsetX() / 2 );
 	
 	var child = this;
 	while( child.getParent().getType() == 'Group' ){
@@ -302,7 +302,7 @@ Kinetic.Circle.prototype.getCenterX = function(){
 }
 
 Kinetic.Circle.prototype.getTrueY = function(){
-	var output = this.y() - ( this.radius() / 2 );
+	var output = this.y() - ( this.radius() / 2 ) - ( this.offsetY() / 2 );
 	
 	var child = this;
 	while( child.getParent().getType() == 'Group' ){

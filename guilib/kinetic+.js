@@ -459,6 +459,26 @@ function moveLineSideHelperPlanB( _sidePoints, _joinableSides, _az, _points, _si
 	return moveLineSideHelper( sideSegment, _az, _points, _side, _anchor )
 }
 
+function moveLineSideSimple( _line, _side, _az ){
+	var points = _line.points();
+	
+	if( _az == 'a' ){
+		points[0] = _side.getCenterX();
+		points[1] = _side.getCenterY();
+		points[2] = _side.getCenterX();
+		points[3] = _side.getCenterY();
+	} else {
+		points[points.length-4] = _side.getCenterX();
+		points[points.length-3] = _side.getCenterY();
+		points[points.length-2] = _side.getCenterX();
+		points[points.length-1] = _side.getCenterY();
+	}
+	
+	_line.points( points );
+	_line.getLayer().draw();
+	
+}
+
 /*	addLink: transforms a line into a link that will automatically be joined
  * 	both the _aSide and _zSide Kinetic objects.
  * 
@@ -518,21 +538,104 @@ function addLink( _line, _aSide, _zSide, _aSideAnchor, _zSideAnchor ){
 		_line.points(points);
 		
 		insertSide( _line, 'a', _aSide );
-		insertAnchor( _line, 'a', _aSideAnchor );
+		if( _aSide.getClassName() === 'Rect' )
+			insertAnchor( _line, 'a', _aSideAnchor );
+		
 		insertSide( _line, 'z', _zSide );
-		insertAnchor( _line, 'z', _zSideAnchor );
+		if( _zSide.getClassName() === 'Rect' )
+			insertAnchor( _line, 'z', _zSideAnchor );
 		
 		//Create a generic function that will keep the line in sync based upon its properties
 		//and assign it as a property of the _line
 		var funMoveLine = function(){
-			moveLineSide( this, this.aSide, 'a', this.aSideAnchor );
-			moveLineSide( this, this.zSide, 'z', this.zSideAnchor );
+			if( this.aSide.getClassName() === 'Rect' ){
+				moveLineSide( this, this.aSide, 'a', this.aSideAnchor );
+			} else {
+				moveLineSideSimple( this, this.aSide, 'a' );
+			}
+			
+			if( this.zSide.getClassName() === 'Rect' ){
+				moveLineSide( this, this.zSide, 'z', this.zSideAnchor );
+			} else {
+				moveLineSideSimple( this, this.zSide, 'z' );
+			}
+				
 		}
 		
 		_line.moveLine = funMoveLine;
 	
 		//Move the lines to make sure they are current right when added
 		_line.moveLine();
+	}
+}
+
+function insertSide( _line, _az, _side ){
+	//Get objects if strings were passed
+	if( typeof _line === 'string' )
+		_line = master.canvas.stage.find( '#' + _line )[0];
+		
+	//Get objects if strings were passed
+	if( typeof _side === 'string' )
+		_side = master.canvas.stage.find( '#' + _side )[0];
+		
+	if( ( _az === 'a' && typeof _line.aSide !== 'undefined' ) || ( _az === 'z' && typeof _line.zSide !== 'undefined' ) ){
+		console.log( 'insertSide: Line is already linked, no action taken');
+	} else if ( _line.id() == undefined || _side.id() == undefined ) {
+		console.log( 'insertSide: Line, or side did not have an id attribute set, no action taken');
+	} else {
+		
+		//Then store the side in the line
+		if( _az === 'a' ){
+			_line.aSide = _side;	
+		} else if ( _az === 'z' ){
+			_line.zSide = _side;	
+		}
+		
+		//Get the parent, and set on to side, if parent is a group...
+		var parent = _side.getParent();
+		var on = _side;
+		if( parent.getType() === 'Group' ){
+			//Set on to parent
+			on = parent;
+			
+			//Add the side to the groups sides property, creating it if it does not already exist
+			if( on.sides == undefined )
+				on.sides = {};
+			on.sides[ ( _side.id() != undefined ) ? _side.id() : uuid.v4() ] = _side;
+		}
+	
+		//Add this line to the _side's lines property, creating it if it does not already exist
+		if( typeof _side.lines === 'undefined' )
+			_side.lines = {};
+		_side.lines[ ( _line.id() != undefined ) ? _line.id() : uuid.v4() ] = _line;
+		
+		//Add a function property to _side that will call the move line property of each line
+		//in _side's lines property
+		_side.moveLine = function(){
+			for( var ref in this.lines ){
+				if( typeof this.lines[ ref ].moveLine === 'function' )
+					this.lines[ ref ].moveLine();	
+			}
+		};
+		
+		//Remove any event handler on on (to prevent dupes) and then add a event handler to
+		//move line(s) when it moves
+		on.off( 'dragmove.link');
+		on.on('dragmove.link', function(){
+			if( typeof this.moveLine === 'function' )
+				this.moveLine();
+			
+			if( typeof this.sides === 'object' ){
+				for( var ref in this.sides ){
+					if( typeof this.sides[ ref ].moveLine === 'function' )
+						this.sides[ ref ].moveLine();
+				}
+			}	
+		});
+	
+		//Finnaly move the line
+		if( typeof _line.moveLine === 'function' )
+			_line.moveLine();
 	}
 }
 
@@ -571,7 +674,7 @@ function deleteLinkSide( _line, _az ){
 		
 		//Get sides parent, if group and it has a sides property
 		var parent = side.getParent();
-		if( parent.getType() === 'Group' && typeof parent.sides[ side.id() ] === 'object' ){
+		if( parent.getClassName() === 'Group' && typeof parent.sides[ side.id() ] === 'object' ){
 			//Delete this lines entry in sides
 			delete parent.sides[ side.id() ];
 			
@@ -648,75 +751,6 @@ function insertAnchor( _line, _az, _anchor ){
 	
 	if( typeof _line.moveLine === 'function' )
 		_line.moveLine();
-}
-
-function insertSide( _line, _az, _side ){
-	//Get objects if strings were passed
-	if( typeof _line === 'string' )
-		_line = master.canvas.stage.find( '#' + _line )[0];
-		
-	//Get objects if strings were passed
-	if( typeof _side === 'string' )
-		_side = master.canvas.stage.find( '#' + _side )[0];
-		
-	if( ( _az === 'a' && typeof _line.aSide !== 'undefined' ) || ( _az === 'z' && typeof _line.zSide !== 'undefined' ) ){
-		console.log( 'insertSide: Line is already linked, no action taken');
-	} else if ( _line.id() == undefined || _side.id() == undefined ) {
-		console.log( 'insertSide: Line, or side did not have an id attribute set, no action taken');
-	} else {
-		
-		//Then store the side in the line
-		if( _az === 'a' ){
-			_line.aSide = _side;	
-		} else if ( _az === 'z' ){
-			_line.zSide = _side;	
-		}
-		
-		//Get the parent, and set on to side, if parent is a group...
-		var parent = _side.getParent();
-		var on = _side;
-		if( parent.getType() === 'Group' ){
-			//Set on to parent
-			on = parent;
-			
-			//Add the side to the groups sides property, creating it if it does not already exist
-			if( on.sides == undefined )
-				on.sides = {};
-			on.sides[ ( _side.id() != undefined ) ? _side.id() : uuid.v4() ] = _side;
-		}
-	
-		//Add this line to the _side's lines property, creating it if it does not already exist
-		if( typeof _side.lines === 'undefined' )
-			_side.lines = {};
-		_side.lines[ ( _line.id() != undefined ) ? _line.id() : uuid.v4() ] = _line;
-		
-		//Add a function property to _side that will call the move line property of each line
-		//in _side's lines property
-		_side.moveLine = function(){
-			for( var ref in this.lines ){
-				this.lines[ ref ].moveLine();	
-			}
-		};
-		
-		//Remove any event handler on on (to prevent dupes) and then add a event handler to
-		//move line(s) when it moves
-		on.off( 'dragmove.link');
-		on.on('dragmove.link', function(){
-			if( typeof this.moveLine === 'function' )
-				this.moveLine();
-			
-			if( typeof this.sides === 'object' ){
-				for( var ref in this.sides ){
-					if( typeof this.sides[ ref ].moveLine === 'function' )
-						this.sides[ ref ].moveLine();
-				}
-			}	
-		});
-	
-		//Finnaly move the line
-		if( typeof _line.moveLine === 'function' )
-			_line.moveLine();
-	}
 }
 
 function makeSizableUpdate(activeAnchor) {
@@ -1067,7 +1101,7 @@ function makeCircleSelectable( _group, _type ){
 		var child = children[i];
 		if( child.getName() === 'outter' ){
 			hasOutter = true;
-		} else if ( child.className === 'Circle' ) {
+		} else if ( child.getClassName() === 'Circle' ) {
 			child.offsetX( child.radius() * -1 );
 			child.offsetY( child.radius() * -1 );
 			if( child.radius() > maxRadius )

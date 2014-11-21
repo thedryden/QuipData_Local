@@ -86,6 +86,7 @@ function Canvas( _width, _height ){
   	this.callableFunctions = [];
   	this.callableFunctions['makeInteractive'] = makeInteractive;
   	this.callableFunctions['attachTo'] = attachTo;
+  	this.callableFunctions['makeCircleSelectable']= makeCircleSelectable;
 }
 
 /*	getMousePos: obtains the current position of the mouse over the

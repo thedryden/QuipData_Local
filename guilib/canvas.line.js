@@ -439,7 +439,6 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 		}
 		
 		//Calculate position of predicate as average of all other center positions
-	
 		var x = 0
 		for( var i = 0; i < aX.length; i++ ){
 			x += aX[i]; 
@@ -542,7 +541,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 			//If type is not roleRect
 			} else {
 				//If the visual's modelID is for a rule
-				if( aVisualObject.modelID.match( master.line.ruleIDRegEx ) ){
+				if( aVisualObject.modelID.match( master.rule.ruleIDRegEx ) ){
 					var found = typeof this.syncPredicateHelperGetRule( aVisualObject.modelID, _newRules ) !== 'undefined';
 					
 					if( found === false ){
@@ -559,7 +558,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 						}
 						}
 						
-						if( master.line.uniqueTypes[ aVisualObject.type ] === true ){
+						if( master.rule.uniqueTypes[ aVisualObject.type ] === true ){
 							//Determine if there is another unique object with this 
 							//x/y, don't move other obejcts if true
 							var moveOthers = true;
@@ -707,7 +706,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 					throwError( 'Canvas.Line', 'syncPredicate', 'The passed predicate contained a rule that could not be found in local storage or the passed set of new rules.' );
 				}
 				
-				if( master.line.uniqueTypes[ aModelRule.type ] === true ){
+				if( master.rule.uniqueTypes[ aModelRule.type ] === true ){
 					//Determine if it alread exists
 					var found = false;
 					for( var visObjRef in visualModel.objects ){
@@ -746,7 +745,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 						if( visObjRef !== 'empty' ){
 							var aVisualObject = visualModel.objects[ visObjRef ];
 							
-							if( master.line.uniqueTypes[ aVisualObject.type ] === true ){
+							if( master.rule.uniqueTypes[ aVisualObject.type ] === true ){
 								if( aVisualObject.type.substring( 0, 7 ) === 'primary' ){
 									var found = false
 									for( var i = 0; i < allVisualUniques.length; i++ ){
@@ -784,7 +783,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 							var aVisualObject = allVisualUniques[ voi ];
 							
 							var inserted = false;
-							if( master.line.uniqueTypes[ aVisualObject.type ] === true ){
+							if( master.rule.uniqueTypes[ aVisualObject.type ] === true ){
 								if( visualUniques.length === 0 ){
 									visualUniques[0] = aVisualObject;
 									inserted = true; 
@@ -817,7 +816,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 								var aVisualObject = visualModel.objects[ visObjRef ];
 								//If the unique being inserted is not many to many then don't move any existing uniques
 								//so the new unique can be placed at the bottom
-								if( aUnique.length !== 1 || !master.line.uniqueTypes[ aVisualObject.type ] ){
+								if( aUnique.length !== 1 || !master.rule.uniqueTypes[ aVisualObject.type ] ){
 									if( aVisualObject.className !== 'Line' ){
 										if( visualModel.horizontal === true ){
 											aVisualObject.attr.y += this.uniqueDistanceFromRole;
@@ -1289,7 +1288,7 @@ CanvasLine.prototype.syncPredicateHelperGetRule = function( _childRuleID, _newRu
 		if( objDeleted === false )
 			return undefined;
 	
-		if( aModelRule.id.match( master.line.ruleIDRegEx ) && typeof aModelRule.parentID === 'undefined' )
+		if( aModelRule.id.match( master.rule.ruleIDRegEx ) && typeof aModelRule.parentID === 'undefined' )
 			return aModelRule;
 				
 		var aModelRule = getObjPointer( master.model, aModelRule.parentID );
@@ -2020,7 +2019,7 @@ CanvasLine.prototype.editPredicate = function( _id ){
 			var aModelRule = getObjPointer( master.model, aModelRule.parentID );
 			
 			if( master.line.ruleInsidePred( aModelRule, visualPred ) === true ){
-				if( master.line.uniqueTypes[ aModelRule.type ] === true ){
+				if( master.rule.uniqueTypes[ aModelRule.type ] === true ){
 					if( aModelRule.type.substring( 0, 7 ) === 'primary' ){
 						this.primary = true;
 					}
