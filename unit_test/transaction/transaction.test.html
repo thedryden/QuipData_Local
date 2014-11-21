@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+    <title>QuipData UI Unit Test</title>
+	
+	<!--Foreign Libraries-->
+	<script src='https://cdn.firebase.com/js/client/1.0.11/firebase.js'></script>
+	<script src='../../vendor/jquery-2.1.1.min.js'></script>
+	<script src='../../vendor/jquery-ui.min.js'></script>
+	<script src='../../vendor/kinetic-v5.1.0.min.js'></script>
+	<script src='../../vendor/uuid.js'></script>
+
+	<!--Dev Created Libraries-->
+	<script src='../../guilib/functions.js'></script>
+	<script src='../../guilib/layout.js'></script>
+	<script src='../../guilib/chat.js'></script>
+	<script src="../../guilib/kinetic.prototype.js"></script>
+	<script src="../../guilib/kinetic+.js"></script>
+
+	<script src="../../guilib/master.js"></script>
+	<script src="../../guilib/transaction.js"></script>	
+	<script src="../../guilib/cloud_handler.js"></script>
+	<script src="../../guilib/transaction.cloud.js"></script>
+	
+	<script src="../../guilib/error_handler.js"></script>
+	
+	<!--Start UI-->
+	<script>
+		var fbModelRef = 'https://vivid-fire-1112.firebaseio.com/test/transaction/' + uuid.v4();
+	
+		var master = new Master( fbModelRef
+			, '1eb5a6cc-c5bf-4907-be2b-c542dc912f27'
+			, 'thedryden'
+			, true );
+    </script>
+</head>
+<body>
+	<script src='../../vendor/mocha.js'></script>
+	<script src='../../vendor/chai.js'></script>
+	<script src='../json_equals.js'></script>
+	<link rel="stylesheet" type="text/css" href="../../vendor/mocha.css">
+	
+	<div name="mocha" id="mocha"></div>
+	<div name="transaction" id="transaction" style="display: none;"></div>
+
+    <script>mocha.setup('bdd')</script>
+    <script>expect = chai.expect</script>
+    <script src="transaction.test.js"></script>
+    <script>
+		//Test specific code to condition Firebase before testing
+		var tempFB = new Firebase( fbModelRef );
+		
+    	var emptyModel = {"Model":{"Model":{"metadata":{"id":"","name":"","type":"","creator":"","createdOn":"","editors":"","modifiedDate":""},"ModelObjects":{"empty":""},"ModelRelationships":{"empty":""},"ModelRules":{"empty":""},"TransactionLog":{"Transactions":{"empty":""},"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""}}},"ModelRefs":{"empty":""}},"VisualModel":{"metadata":{"id":"","name":"","type":""},"groups":{"empty":""},"links":{"empty":""},"comments":{"empty":""},"TransactionLog":{"Transactions":{"empty":""},"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""}}},"TransactionLog":{"empty":""},"loaded":false}
+	    tempFB.set( emptyModel, function(){
+	    	waitForModel( 0 );	
+	    });
+		//End test specific code
+    
+	    function waitForModel( _i ){
+	    	if( master.model != null && master.model != undefined && typeof master.model['loaded'] == 'boolean' ){
+	    		mocha.run();
+	    	} else if ( _i > 60 ) {
+	    		return;
+	    	} else {
+	    		_i++;
+				setTimeout( 'waitForModel( ' + _i + ' )', 500 );
+	    	}
+	    }
+    </script>
+</body>

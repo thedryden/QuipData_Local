@@ -1,0 +1,234 @@
+<html>
+<head>
+	<!--Foreign Libraries-->
+	<script src='https://cdn.firebase.com/js/client/1.0.11/firebase.js'></script>
+	<script src='vendor/jquery-2.1.1.min.js'></script>
+	<script src='vendor/jquery-ui.min.js'></script>
+	<script src='vendor/kinetic-v5.1.0.js'></script>
+	<script src='vendor/uuid.js'></script>
+
+	<!--Dev Created Libraries-->
+	<script src='guilib/functions.js'></script>
+	<script src='guilib/layout.js'></script>
+	<script src='guilib/chat.js'></script>
+	<script src="guilib/kinetic.prototype.js"></script>
+	<script src="guilib/kinetic+.js"></script>
+
+	<script src="guilib/master.js"></script>
+	<script src="guilib/transaction.js"></script>	
+	<script src="guilib/transaction.cloud.js"></script>
+	
+	<script src="guilib/canvas.js"></script>
+	<script src="guilib/canvas.orm_obj.js"></script>
+	<script src="guilib/canvas.line.js"></script>
+	<script src="guilib/canvas.rule.js"></script>
+	
+	<script src="guilib/orm_obj.js"></script>
+	<script src="guilib/line.js"></script>
+	<script src="guilib/rule.js"></script>
+	
+	<script src="guilib/error_handler.js"></script>
+	
+	<!--CSS--->
+	<!--Foreign Styles-->
+	<link rel="stylesheet" type="text/css" href="vendor/jquery-ui.min.css">
+	
+	<!--Dev Created Styles-->
+	<link rel="stylesheet" type="text/css" href="css/sprite.css">
+	<link rel="stylesheet" type="text/css" href="css/gui.css">
+	
+	<!--Start UI-->
+	<script>
+		//Start Firebase
+		//var master = new Master( '{{FirebaseRef}}',, '{{fb_token}}', '{{UserUUID}}', '{{UserName}}' );
+		var master = new Master( 'https://vivid-fire-1112.firebaseio.com/files/086c81c0-8a0f-4cb9-88a0-66c764cf4fda'
+			, ''
+			, '1eb5a6cc-c5bf-4907-be2b-c542dc912f27'
+			, 'thedryden' );
+    </script>
+</head>
+<body>
+	<div name="which_ribbon" id="which_ribbon">
+		<span name="tab_ribbon_file" id="tab_ribbon_file" class="ribbon_tab" onclick="selectRibbon( 'ribbon_file' )">File</span>
+		<span name="tab_ribbon_view" id="tab_ribbon_view" class="ribbon_tab" onclick="selectRibbon( 'ribbon_view' )">View</span>
+	</div>
+	<div name="ribbon_file" id="ribbon_file" class="ribbon">
+		<span class="icon"><div class="sprite disk"></div>Save</span>
+		<span class="icon"><div class="sprite arrow_divide"></div>Save As</span>
+		<span class="icon"><div class="sprite folder"></div>Open</span>
+		<span class="icon"><div class="sprite chart_organisation_add"></div>New</span>
+	</div>
+	<div name="ribbon_view" id="ribbon_view" class="ribbon">
+		<span name="ribbon_chat" id="ribbon_chat" class="icon" onclick="master.chat.toggle()"><div class="sprite comments"></div>Chat</span>
+		<span class="icon"><div class="sprite error"></div>Errors</span>
+		<span class="icon"><div class="sprite funnel"></div>Filter</span>
+		<span class="icon" onclick="emptyModel()"><div class="sprite error"></div>Reset</span>
+		<script>function emptyModel(){ master.transaction.fbModel.set( $.parseJSON( '{"Model":{"Model":{"ModelObjects":{"empty":""},"ModelRelationships":{"empty":""},"ModelRules":{"empty":""},"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"metadata":{"createdOn":"","creator":"","editors":"","id":"","modifiedDate":"","name":"","type":""}},"ModelRefs":{"empty":""}},"TransactionLog":{"empty":""},"VisualModel":{"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"comments":{"empty":""},"groups":{"empty":""},"links":{"empty":""},"metadata":{"id":"","name":"","type":""}},"loaded":true}' ) ) }</script>
+	</div>
+	<div name="icons" id="icons">
+		<script>closeAllAdd( 'icons_entity', function(){ master.ormObj.close( 'entity' ) } )</script>
+		<span name="icons_entity" id="icons_entity" class="icon" onclick="closeAll( 'icons_entity' );master.ormObj.toggle( 'entity' )"><div class="sprite entity"></div>Entity</span>
+		<script>closeAllAdd( 'icons_value', function(){ master.ormObj.close( 'value' ) } )</script>
+		<span name="icons_value" id="icons_value" class="icon" onclick="closeAll( 'icons_value' );master.ormObj.toggle( 'value' )"><div class="sprite value"></div>Value</span>
+		
+		<br />
+		
+		<script>closeAllAdd( 'icons_mass_add', function(){ master.ormObj.closeMassAdd( 'value' ) } )</script>
+		<span name="icons_mass_add" id="icons_mass_add" class="icon" onclick="closeAll( 'icons_mass_add' );master.ormObj.toggleMassAdd();"><div class="sprite object"></div>Objects</span>
+		<script>closeAllAdd( 'icons_line', function(){ master.line.close() } )</script>
+		<span name='icons_line' id='icons_line' class="icon" onclick="closeAll( 'icons_line' );master.line.toggle();"><div class="sprite line"></div>Line</span>
+		
+		<br />
+		
+		<script>closeAllAdd( 'icons_unary', function(){ master.line.close( true ) } )</script>
+		<span name='icons_unary' id='icons_unary' class="icon" onclick="closeAll( 'icons_unary' );master.line.toggle( true );"><div class="sprite unary_line"></div>Unary</span>
+		<script>closeAllAdd( 'icons_required', function(){ master.rule.close( 'required' ) } )</script>
+		<span name='icons_required' id='icons_required' class="icon" style="font-size: .9em;" onclick="closeAll( 'icons_required' );master.rule.toggle( 'required' );"><div class="sprite required"></div>Required</span>
+		
+		<br />
+		
+		<script>closeAllAdd( 'icons_unique', function(){ master.rule.close( 'unique' ) } )</script>
+		<span name='icons_unique' id='icons_unique' class="icon" onclick="closeAll( 'icons_unique' );master.rule.toggle( 'unique' );"><div class="sprite unique"></div>Unique</span>
+		<script>closeAllAdd( 'icons_primary', function(){ master.rule.close( 'primary' ) } )</script>
+		<span name='icons_primary' id='icons_primary' class="icon" onclick="closeAll( 'icons_primary' );master.rule.toggle( 'primary' );"><div class="sprite primary"></div>Primary</span>
+	</div>
+	<div name="ui" id="ui"></div>
+	
+	<!--Wandering Divs-->
+	<!--Font Styles-->
+	<div name="wandering_font_style" id="wandering_font_style" class="wander_div" style="display: none;">
+		<div name="div_font_style_bar" id="div_font_style_bar" class="wandering_bar">
+			<div class="sprite cross" onclick="closeFont()"></div>
+		</div>
+		<div name="font_style" id="font_style">
+			<span onclick="$('#tb_font_family').toggle();"><strong>Font:</strong></span>
+			<table name="tbl_font_family" id="tbl_font_family">
+			<tr onclick="$('#tb_font_family').toggle();">
+				<td name="selected_font_family" id="selected_font_family" style="font-family: Calibri;">Calibri</td>
+				<td name="font_family_icon" id="font_family_icon"><div class="sprite bullet_toggle_plus"></div>
+			</tr>
+			<tbody name="tb_font_family" id="tb_font_family" style="display: none;">
+			<tr onclick="changeFontSelect( 'Arial' )"><td style="font-family: 'Arial'" colspan="2">Arial</td></tr>
+			<tr onclick="changeFontSelect( 'Arial Narrow' )"><td style="font-family: 'Arial Narrow'" colspan="2">Arial Narrow</td></tr>
+			<tr onclick="changeFontSelect( 'Calibri' )"><td style="font-family: 'Calibri'" colspan="2">Calibri</td></tr>
+			<tr onclick="changeFontSelect( 'Century Gothic' )"><td style="font-family: 'Century Gothic'" colspan="2">Century Gothic</td></tr>
+			<tr onclick="changeFontSelect( 'Comic Sans' )"><td style="font-family: 'Comic Sans'" colspan="2">Comic Sans</td></tr>
+			<tr onclick="changeFontSelect( 'Courier New' )"><td style="font-family: 'Courier New'" colspan="2">Courier New</td></tr>
+			<tr onclick="changeFontSelect( 'Georgia' )"><td style="font-family: 'Georgia'" colspan="2">Georgia</td></tr>
+			<tr onclick="changeFontSelect( 'Helvetica' )"><td style="font-family: 'Helvetica'" colspan="2">Helvetica</td></tr>
+			<tr onclick="changeFontSelect( 'Impact' )"><td style="font-family: 'Impact'" colspan="2">Impact</td></tr>
+			<tr onclick="changeFontSelect( 'Lucida Console' )"><td style="font-family: 'Lucida Console'" colspan="2">Lucida Console</td></tr>
+			<tr onclick="changeFontSelect( 'Lucida Bright' )"><td style="font-family: 'Lucida Bright'" colspan="2">Lucida Bright</td></tr>
+			<tr onclick="changeFontSelect( 'Palatino Linotype' )"><td style="font-family: 'Palatino Linotype'" colspan="2">Palatino Linotype</td></tr>
+			<tr onclick="changeFontSelect( 'Tahoma' )"><td style="font-family: 'Tahoma'" colspan="2">Tahoma</td></tr>
+			<tr onclick="changeFontSelect( 'Times New Roman' )"><td style="font-family: 'Times New Roman'" colspan="2">Times New Roman</td></tr>
+			<tr onclick="changeFontSelect( 'Trebuchet MS' )"><td style="font-family: 'Trebuchet MS'" colspan="2">Trebuchet MS</td></tr>
+			<tr onclick="changeFontSelect( 'Verdana' )"><td style="font-family: 'Verdana'" colspan="2">Verdana</td></tr>
+			</tbody>
+			</table>
+		
+			<div name="font_style_other" id="font_style_other">
+				<label for="font_size"><strong>Font Size: </strong></label>
+				<select name="font_size" id="font_size">
+					<option value="6">6</option>
+					<option value="7">7</option>
+					<option value="8" selected="true">8</option>
+					<option value="9">9</option>
+					<option value="10">10</option>
+					<option value="11">11</option>
+					<option value="12">12</option>
+					<option value="13">13</option>
+					<option value="14">14</option>
+					<option value="15">15</option>
+					<option value="16">16</option>
+					<option value="17">17</option>
+					<option value="18">18</option>
+					<option value="19">19</option>
+					<option value="20">20</option>
+				</select>
+				
+				<br />
+				<input name="font_style_style" id="font_style_style" type="hidden" value="" />
+				
+				<span name="font_style_bold" id="font_style_bold" class="font_style_style" onclick="fontStyleStyleClick( 'font_style_bold', 'b' )">
+					<div class="sprite bold"></div>	
+				</span>
+				<span name="font_style_italic" id="font_style_italic" class="font_style_style" onclick="fontStyleStyleClick( 'font_style_italic', 'i' )">
+					<div class="sprite italic"></div>	
+				</span>
+				<span name="font_style_underline" id="font_style_underline" class="font_style_style" onclick="fontStyleStyleClick( 'font_style_underline', 'u' )">
+					<div class="sprite underline"></div>	
+				</span>
+			</div>
+		</div>
+	</div>
+	
+	<!--Chat Window-->
+	<div name="wandering_chat" id="wandering_chat" class="wander_div" style="display: none;">
+		<div name="wandering_chat_main" id="wandering_chat_main">
+			<div name="div_chat_bar" id="div_chat_bar" class="wandering_bar">
+				<div class="sprite sprite_hover cross" onclick="master.chat.close();"></div>
+			</div>
+			<div name="wandering_chat_main_two" id="wandering_chat_main_two" style="width: 500px; height: 300px;">
+				<div name="chat_window" id="chat_window"></div>
+				<textarea name="txt_message" id="txt_message"></textarea>
+			</div>
+		</div>
+		<button class="centered_button" onclick="master.chat.sendChat()";>Submit</button>
+	</div>
+	
+	<div name="block_div" id="block_div" style="display: none;"></div>
+	<div name="block_div_message" id="block_div_message" style="display: none;"></div>
+	
+	<!--Invisable Input for use with canvas-->
+	<input name="canvas_text" id="canvas_text" type="text" value="" style="display: none;" />
+	<span name="canvas_span" id="canvas_span"></span>
+	
+	<!--Mass Add Window-->
+	<div name="wandering_mass_add" id="wandering_mass_add" class="wander_div" style="display: none;">
+		<div name="wander_mass_add_bar" id="wander_mass_add_bar" class="wandering_bar">
+			<div class="sprite sprite_hover cross" onclick="master.ormObj.closeMassAdd();"></div>
+		</div>
+		<div name="wandering_mass_add_content" id="wandering_mass_add_content"></div>
+		<span onclick="master.ormObj.addOneForm();"><div class="sprite bullet_toggle_plus"></div> Add Object</span>
+		<button class="centered_button" onclick="master.ormObj.massAdd()";>Submit</button>
+	</div>
+	
+	<!--Line Properties-->
+	<div name="wander_line_prop" id="wander_line_prop" class="wander_div" style="display: none;">
+		<div name="wander_line_prop_bar" id="wander_line_prop_bar" class="wandering_bar">
+			<div class="sprite sprite_hover cross" onclick="master.canvas.line.closeEditPred();"></div>
+		</div>
+		<div name="wander_line_prop_content" id="wander_line_prop_content">
+			<div name="wander_line_prop_canvas" id="wander_line_prop_canvas"></div>
+		</div>
+		<div name="wander_line_prop_form" id="wander_line_prop_form">
+			<p>
+			<label for="nary">N-ary:</label>
+			<select name="nary" id="nary" onchange="master.canvas.line.changeNary();">
+				<option value="1">1</option>
+				<option value="2">2</option>
+				<option value="3">3</option>
+				<option value="4">4</option>
+			</select>
+			</p>
+			<p name="unique_warning" id="unique_warning" style="display: none;">
+				When the nary is increased above 2 you will need to use Shift and Ctrl to select multiple uniques targets in order to set many to many relationships.
+			</p>
+			<p>
+				<label for="role_label">Role Label:</label>
+				<input name="role_label" id="role_label" type="text" value="" maxlength="50" />
+			</p>
+			<p>
+				<label for="inverse_label">Inverse Label:</label>
+				<input name="inverse_label" id="inverse_label" type="text" value="" maxlength="25" />
+			</p>
+			<span style="float: right;">
+				<button onclick="master.line.saveEditPredicate();">Apply</button>
+				<button onclick="master.line.saveEditPredicate();master.line.closeEditPred();">OK</button>
+			</span>
+			<br />
+		</div>
+	</div>
+</body>
+</html>

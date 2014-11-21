@@ -1,0 +1,63 @@
+<html>
+<head>
+	<!--Foreign Libraries-->
+	<script src='https://cdn.firebase.com/js/client/1.0.11/firebase.js'></script>
+	<script src='../../vendor/jquery-2.1.1.min.js'></script>
+	<script src='../../vendor/jquery-ui.min.js'></script>
+	<script src='../../vendor/kinetic-v5.1.0.min.js'></script>
+	<script src='../../vendor/uuid.js'></script>
+
+	<!--Dev Created Libraries-->
+	<script src='../../guilib/functions.js'></script>
+	<script src='../../guilib/layout.js'></script>
+	<script src='../../guilib/chat.js'></script>
+	<script src="../../guilib/kinetic.prototype.js"></script>
+	<script src="../../guilib/kinetic+.js"></script>
+
+	<script src="../../guilib/master.js"></script>
+	<script src="../../guilib/transaction.js"></script>	
+	<script src="../../guilib/cloud_handler.js"></script>
+	<script src="../../guilib/transaction.cloud.js"></script>
+	
+	<script src="../../guilib/error_handler.js"></script>
+	
+	<!--Start UI-->
+	<script>
+    	var fbModelRef = window.location.search.substring(1);
+	
+		//Start Firebase
+		//var master = new Master( '{{FirebaseRef}}', '{{UserUUID}}', '{{UserName}}' );
+		var master = new Master( fbModelRef
+			, '1eb5a6cc-c5bf-4907-be2b-c542dc912f27'
+			, 'thedryden'
+			, true );
+			
+    	deleteTest( 0 );
+		
+		function deleteTest( _i ){
+			if( master != undefined && master.model != undefined && master.model.loaded != undefined && master.model.VisualModel.comments['bc22185f-0d6c-468a-9267-54466f666821'] != undefined ){
+				var toDelete = [
+					{	"objectID" : "#/VisualModel/comments/bc22185f-0d6c-468a-9267-54466f666821",
+						"commandType" : "delete",
+						"value" : null
+					}
+				]
+				var trans = master.transaction.createTransaction( "VisualModel", toDelete );
+				master.transaction.processTransactions( trans );
+				
+				var modelObjects = master.transaction.fbModel.child( 'loaded' );
+				modelObjects.set(true);
+				
+				return
+			}
+			if( _i > 120 ){
+				alert( _i );
+				return;
+			}
+			_i++;
+			setTimeout( 'deleteTest( ' + _i + ' )', 500 );
+		}
+    </script>
+</head>
+<body>
+</body>
