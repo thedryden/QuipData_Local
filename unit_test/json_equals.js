@@ -5,7 +5,7 @@ function JSONEqual( _json1, _json2, _parrentID ){
 	if( typeof _json1 != 'object' || typeof _json2 != 'object' )
 		return false;
 	
-	if( JSONLength( _json1 ) != JSONLength( _json2 ) )
+	if( getPropertyCount( _json1 ) != getPropertyCount( _json2 ) )
 		return false;
 		
 	if( _parrentID == undefined )
@@ -30,7 +30,7 @@ function JSONEqual( _json1, _json2, _parrentID ){
 							break;
 						}
 					//If array test if equal
-					} else if( typeof _json1[id1] == 'array' && arraysEqual( _json1[id1], _json2[id2] ) ){
+					} else if( typeof _json1[id1] == 'array' && _json1[id1].equal( _json2[id2] ) ){
 						good = true;
 						break;
 					} else if ( typeof _json1[id1] == 'string' ){
@@ -73,33 +73,4 @@ function stringUUIDEqual( _string1, _string2 ){
 		return true;
 		
 	return false;
-}
-
-function JSONLength( _json ){
-	if( typeof _json != 'object' )
-		return -1;
-	
-	var id = "";
-	var length = 0;
-	for( id in _json ){
-		length++;
-	}
-	
-	return length;
-}
-
-//Code from enyo on stack exchange: 
-//http://stackoverflow.com/questions/3115982/how-to-check-javascript-array-equals
-function arraysEqual(a, b) {
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  if (a.length != b.length) return false;
-
-  // If you don't care about the order of the elements inside
-  // the array, you should sort both arrays here.
-
-  for (var i = 0; i < a.length; ++i) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
 }

@@ -8,7 +8,7 @@ function ORMOBJ(){
 		"value" : {
 		    "id": "Model/Model/ModelObjects/UUID",
 		    "name": "",
-		    "type": "Entity",
+		    "type": "entity",
 		    "notes": "",
 		    "ModelRelationshipConnectors": { "empty":"" }
 		}
@@ -21,11 +21,14 @@ function ORMOBJ(){
 		"value" : {
 		    "id": "Model/Model/ModelObjects/UUID",
 		    "name": "",
-		    "type": "Value",
+		    "type": "value",
 		    "notes": "",
 		    "ModelRelationshipConnectors": { "empty":"" }
 		}
 	}
+	
+	this.modelObject = null;
+	this.visualGroup = null;
 	
 	this.massAddObjectCount = 0;
 	this.massAddOneForm = '<fieldset><legend>Object ###</legend>';
@@ -79,7 +82,8 @@ ORMOBJ.prototype.deleteAObj = function( _id, _integrateWith ){
 		_integrateWith = {};
 	}
 	
-	actions = [];
+	var touched = {};
+	var actions = [];
 	
 	actions[ actions.length ] = { 
 		"objectID" : _id,
@@ -106,11 +110,12 @@ ORMOBJ.prototype.deleteAObj = function( _id, _integrateWith ){
 		}
 		
 		aModelRelationship.ModelRelationshipConnectors[ ref ].objectID = "";
+		touched[ aModelRelationship.id ] = aModelRelationship;
 	}
 	}
 		
-	for( var ref in _integrateWith ){
-		var aObj = _integrateWith[ ref ]; 
+	for( var ref in touched ){
+		var aObj = touched[ ref ]; 
 		
 		actions[ actions.length ] = {
 			"objectID" : aObj.id,
@@ -129,11 +134,11 @@ ORMOBJ.prototype.deleteObj = function( _ids ){
 	var integrated = {};
 	
 	for( var i = 0; i < _ids.length; i++ ){
-		if( _ids[i].match( this.objectIDRegEx ) ){
+		if( _ids[i].match( this.objectIDRegEx ) != null ){
 			var tempActions = this.deleteAObj( _ids[i], integrated  );
-		} else if ( _ids[i].match( master.line.relationshipIDRegEx ) ){
+		} else if ( _ids[i].match( master.line.relationshipIDRegEx ) != null ){
 			var tempActions = master.line.deleteRelationship( _ids[i], integrated  );
-		} else if ( _ids[i].match( master.rule.ruleIDRegEx ) ){
+		} else if ( _ids[i].match( master.rule.ruleIDRegEx ) != null ){
 			var tempActions = master.rule.deleteRule( _ids[i], integrated  );
 		}
 		
@@ -231,6 +236,321 @@ ORMOBJ.prototype.editName = function( _id, _value ){
 		throwError( 'orm_obj.js', 'editName', err.message, false );
 		return;
 	}
+}
+
+ORMOBJ.prototype.openProperties = function( _id ){
+	this.closeProperties();
+	
+	var visualObject = getObjPointer( master.model, _id );
+	if( visualObject == undefined ){
+		throwError( 'orm_obj.js', 'openProperties', 'Passed id, ' + _id + ', does not exist in the model' );
+	}
+	
+	var modelObject = getObjPointer( master.model, visualObject.modelID );
+	if( modelObject == undefined ){
+		throwError( 'orm_obj.js', 'openProperties', 'Model ID, ' + visualObject.modelID + ', does not exist in the model' );
+	}
+	
+	this.modelObject = modelObject;
+	this.visualGroup = visualObject;
+	
+	$('#obj_name').val( modelObject.name );
+	$('#obj_type').val( modelObject.type );
+	this.changeTypeProperties();
+	
+	var visualPK = null;
+	for( var ref in this.visualGroup.objects ){
+	if( ref !== 'empty' ){
+		visualPK = this.visualGroup.objects[ ref ];
+		
+		if( visualPK.type === 'pk' )
+			break;
+	}
+	}
+	
+	if( visualPK.type === 'pk' ){
+		var pkText = visualPK.attr.text.substring( 1 );
+		pkText = pkText.substring( 0, visualPK.attr.text.length - 2 );
+		$('#obj_pk').val( pkText );
+	}
+	
+	$('#wander_obj_prop').show();
+}
+
+ORMOBJ.prototype.closeProperties = function(){
+	this.modelObject = null;
+	this.visualGroup = null;
+	$('#obj_name').val('');
+	$('#obj_pk').val('');
+	$('#obj_type').val( 'entity' );
+	$('#wander_obj_prop').hide();
+}
+
+ORMOBJ.prototype.changeTypeProperties = function(){
+	var type = $('#obj_type').val();
+	
+	if( type === 'entity' ){
+		$('#p_obj_type').show();
+	} else {
+		$('#obj_pk').val('')
+		$('#p_obj_type').hide();
+	}
+	
+}
+
+ORMOBJ.prototype.saveProperties = function( _closeOnFinish ){
+	var pkName = $('#obj_pk').val();
+	
+	var modelGroup = cloneJSON( this.modelObject );
+	
+	modelGroup.name = $('#obj_name').val();
+	modelGroup.type = $('#obj_type').val();
+	
+	var actions = [];
+	
+	var visualPK = null;
+	for( var ref in this.visualGroup.objects ){
+	if( ref !== 'empty' ){
+		visualPK = this.visualGroup.objects[ ref ];
+		
+		if( visualPK.type === 'pk' )
+			break;
+	}
+	}
+	
+	if( visualPK.type !== 'pk' )
+		visualPK = undefined;
+	
+	var modelPKID = null;
+	
+	if( visualPK == undefined || visualPK === '' ){
+		var modelGroup = {
+			"objectID" : modelGroup.id,
+			"commandType" : "update",
+			"value" : modelGroup
+		}
+		
+		actions[ actions.length ] = modelGroup;
+		
+		//Create new model Object for the PK Values
+		var modelGroupPKUUID = uuid.v4();
+		
+		var modelGroupPK = cloneJSON( this.valueTemplate );
+		modelGroupPK.objectID = modelGroupPK.objectID.replace( 'UUID', modelGroupPKUUID ) 
+		modelGroupPK.value.id = modelGroupPK.objectID;
+		modelGroupPK.value.name = pkName;
+		
+		actions[ actions.length ] = modelGroupPK;
+		
+		modelPKID = modelGroupPK.objectID;
+		
+		//Create new Model Relationship to link PK value with existing object
+		var modelRelationshipUUID = uuid.v4();
+		var modelRelationship = cloneJSON( master.line.lineTemplate );
+		modelRelationship.objectID = modelRelationship.objectID.replace( 'UUID', modelRelationshipUUID );
+		modelRelationship.value.id = modelRelationship.objectID;
+		modelRelationship.value.Role = 'primary key';
+		modelRelationship.value.InverseRole = 'identifies'
+		
+		//Link to Object
+		var modelRelationshipConObjUUID = uuid.v4()
+		var modelRelationshipConObj = cloneJSON( master.line.connectorTemplate );
+		modelRelationshipConObj.id = modelRelationship.objectID + '/ModelRelationshipConnectors/' + modelRelationshipConObjUUID;
+		modelRelationshipConObj.parentID = modelRelationship.objectID;
+		modelRelationshipConObj.objectID = modelGroup.value.id;
+		
+		modelRelationship.value.ModelRelationshipConnectors[ modelRelationshipConObjUUID ] = modelRelationshipConObj;
+		
+		modelGroup.value.ModelRelationshipConnectors[ modelRelationshipConObjUUID ] = modelRelationshipConObj.id;
+		
+		//Link to PK
+		var modelRelationshipConPKUUID = uuid.v4()
+		var modelRelationshipConPK = cloneJSON( master.line.connectorTemplate );
+		modelRelationshipConPK.id = modelRelationship.objectID + '/ModelRelationshipConnectors/' + modelRelationshipConPKUUID;
+		modelRelationshipConPK.parentID = modelRelationship.objectID;
+		modelRelationshipConPK.objectID = modelGroupPK.value.id;
+		
+		modelRelationship.value.ModelRelationshipConnectors[ modelRelationshipConPKUUID ] = modelRelationshipConPK;
+		
+		modelGroupPK.value.ModelRelationshipConnectors[ modelRelationshipConPKUUID ] = modelRelationshipConPK.id;
+		
+		actions[ actions.length ] = modelRelationship;
+		
+		//Primary Unique rule on object side
+		var modelRuleUniObjUUID = uuid.v4();
+		var modelRuleUniObj = cloneJSON( master.rule.ruleTempalte );
+		modelRuleUniObj.objectID = modelRuleUniObj.objectID.replace( 'UUID', modelRuleUniObjUUID );
+		modelRuleUniObj.value.id = modelRuleUniObj.objectID;
+		modelRuleUniObj.value.type = 'primary unique';
+		
+		//Rule connection to object
+		var modelRuleConUniObjUUID = uuid.v4();
+		var modelRuleConUniObj = cloneJSON( master.rule.ruleConditionTempalte );
+		modelRuleConUniObj.id = modelRuleUniObj.objectID + '/ModelRuleConditions/' + modelRuleConUniObjUUID;
+		modelRuleConUniObj.parentID = modelRuleUniObj.value.id;
+		modelRuleConUniObj.ModelRelationshipConnectorID = modelRelationshipConObj.id;
+		
+		modelRuleUniObj.value.ModelRuleConditions[ modelRuleConUniObjUUID ] = modelRuleConUniObj;
+		
+		modelRelationshipConObj.modelRuleConditions[ modelRuleConUniObjUUID ] = modelRuleConUniObj.id;
+		
+		actions[ actions.length ] = modelRuleUniObj;
+		
+		//Required Rule on Object Side
+		var modelRuleReqObjUUID = uuid.v4();
+		var modelRuleReqObj = cloneJSON( master.rule.ruleTempalte );
+		modelRuleReqObj.objectID = modelRuleReqObj.objectID.replace( 'UUID', modelRuleReqObjUUID );
+		modelRuleReqObj.value.id = modelRuleReqObj.objectID;
+		modelRuleReqObj.value.type = 'required';
+		
+		//Rule connection to Object
+		var modelRuleConReqObjUUID = uuid.v4();
+		var modelRuleConReqObj = cloneJSON( master.rule.ruleConditionTempalte );
+		modelRuleConReqObj.id = modelRuleReqObj.objectID + '/ModelRuleConditions/' + modelRuleConReqObjUUID;
+		modelRuleConReqObj.parentID = modelRuleReqObj.value.id;
+		modelRuleConReqObj.ModelRelationshipConnectorID = modelRelationshipConObj.id;
+		
+		modelRuleReqObj.value.ModelRuleConditions[ modelRuleConReqObjUUID ] = modelRuleConReqObj;
+		
+		modelRelationshipConObj.modelRuleConditions[ modelRuleConReqObjUUID ] = modelRuleConReqObj.id;
+		
+		actions[ actions.length ] = modelRuleReqObj;
+		
+		//Primary Unique on PK Side
+		var modelRuleUniPKUUID = uuid.v4();
+		var modelRuleUniPK = cloneJSON( master.rule.ruleTempalte );
+		modelRuleUniPK.objectID = modelRuleUniPK.objectID.replace( 'UUID', modelRuleUniPKUUID );
+		modelRuleUniPK.value.id = modelRuleUniPK.objectID;
+		modelRuleUniPK.value.type = 'primary unique';
+		
+		//Rule connection to PK
+		var modelRuleConUniPKUUID = uuid.v4();
+		var modelRuleConUniPK = cloneJSON( master.rule.ruleConditionTempalte );
+		modelRuleConUniPK.id = modelRuleUniPK.objectID + '/ModelRuleConditions/' + modelRuleConUniPKUUID;
+		modelRuleConUniPK.parentID = modelRuleUniPK.value.id;
+		modelRuleConUniPK.ModelRelationshipConnectorID = modelRelationshipConPK.id;
+		
+		modelRuleUniPK.value.ModelRuleConditions[ modelRuleConUniPKUUID ] = modelRuleConUniPK;
+		
+		modelRelationshipConPK.modelRuleConditions[ modelRuleConUniPKUUID ] = modelRuleConUniPK.id;
+		
+		actions[ actions.length ] = modelRuleUniPK;
+		
+	} else if ( visualPK != undefined && pkName === '' ) {
+		var modelObjectPK = getObjPointer( master.model, visualPK.modelID );
+		if( modelObjectPK == undefined ){
+			throwError( 'orm_obj.js', 'saveProperties', 'Model ID, ' + visualPK.modelID + ', does not exist on the model.' );
+		}
+		modelObjectPK = cloneJSON( modelObjectPK );
+		
+		//If PK is linked to more than 1 relationship, don't delete
+		if( getPropertyCount( modelObjectPK.ModelRelationshipConnectors, true === 1 ) )	{
+			var found = false;
+			var modelRelationship = null;
+			//Find the connector associated with modelObjectPK that connects to modelGroup and only modelGroup
+			for( var conRef in modelObjectPK.ModelRelationshipConnectors ){
+			if( conRef !== 'empty' ){
+			//Loop through each connector and get parent
+				var modelRelationshipPKCon = getObjPointer( master.model, modelObjectPK.ModelRelationshipConnectors[ conRef ] );
+				if( modelRelationshipPKCon == undefined ){
+					throwError( 'orm_obj.js', 'saveProperties', 'Model ID, ' + modelObjectPK.ModelRelationshipConnectors[ conRef ] + ', does not exist on the model.' );
+				}
+				
+				modelRelationship = getObjPointer( master.model, modelRelationshipPKCon.parentID );
+				if( modelRelationship == undefined ){
+					throwError( 'orm_obj.js', 'saveProperties', 'ParentID, ' + modelRelationshipCon.parentID + ', does not exist on the model.' );
+				}
+				modelRelationship = cloneJSON( modelRelationship );
+				
+				//Loop through other connectors, if a connector is found that is not linked to modelGroup set correct to false
+				var correct = true;
+				for( var objConRef in modelRelationship.ModelRelationshipConnectors ){
+				if( objConRef !== 'empty' && objConRef !== conRef ){
+					var modelRelationshipObjCon = modelRelationship.ModelRelationshipConnectors[ objConRef ];
+					if( modelRelationshipObjCon.objectID !== modelGroup.id ){
+						correct = false;
+						break;
+					}
+				}
+				}
+				
+				//If correct is still true than we've found the right relationship, set found to true and break
+				if( correct === true ){
+					found = true;
+					break;
+				}
+			}
+			}
+			
+			//If relationship not found do nothing
+			if( found === true ){
+				var integate = {};
+				integate[ modelGroup.id ] = modelGroup; 
+				
+				var deleteActions = master.line.deleteRelationship( modelRelationship.id, integate );
+				var deleteActions2 = this.deleteAObj( modelObjectPK.id, integate );
+				
+				for( var i = 0; i < deleteActions.length; i++ ){
+					var found = false;
+					for( var j = 0; j < deleteActions2.length; j++ ){
+						//If delete actions 1 is delete then use it, otherwise use delete action 2 because it's "newer"
+						if( deleteActions[ i ].objectID === deleteActions2[ j ].objectID ){
+							if( deleteActions[ i ].commandType === 'delete' ){
+								actions[ actions.length ] = deleteActions[ i ];
+								deleteActions2.splice( j, 1 );
+							} else {
+								deleteActions.splice( i, 1 );
+								i--;
+							}
+							found = true;
+							break;
+						}
+					}
+					if( found === false )
+						actions[ actions.length ] = deleteActions[ i ];
+				}
+				
+				for( var i = 0; i < deleteActions2.length; i++  ){
+					actions[ actions.length ] = deleteActions2[ i ];
+				}
+			}
+		}
+	} else if ( visualPK != undefined && visualPK !== pkName ){
+		var modelObjectPK = getObjPointer( master.model, visualPK.modelID );
+		if( modelObjectPK == undefined ){
+			throwError( 'orm_obj.js', 'saveProperties', 'Model ID, ' + visualPK.modelID + ', does not exist on the model.' );
+		}
+		modelObjectPK = cloneJSON( modelObjectPK );
+		
+		modelObjectPK.name = pkName;
+		
+		actions[ actions.length ] = {	
+			"objectID" : modelObjectPK.id,
+			"commandType" : "update",
+			"value" : modelObjectPK
+		};
+		
+		modelPKID = modelObjectPK.id;
+	}
+	
+	try{
+		var trans = master.transaction.createTransaction( "Model", actions );
+		
+		var visualActions = master.canvas.ormObj.saveProperties( modelPKID );
+		
+		var trans = master.transaction.createTransaction( "VisualModel", visualActions, trans );
+		
+		master.transaction.processTransactions( trans );
+		
+		if( _closeOnFinish === true ){
+			this.closeProperties();
+		} else {
+			this.openProperties( this.visualGroup.id );
+		}
+	}catch(err){
+		throwError( 'orm_obj.js', 'addObj', err.message, false );
+		return;
+	}	
 }
 
 ORMOBJ.prototype.toggle = function( _icon ){

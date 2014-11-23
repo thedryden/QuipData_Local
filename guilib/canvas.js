@@ -224,12 +224,17 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 				var tempObj = new Kinetic[childObj.className](
 					childObj.attr
 				);
+				
 				if( typeof childObj.outside !== 'undefined' && childObj.outside === true ){
 					this.layer.add( tempObj );
 				} else {
 					canvasGroup.add( tempObj );	
 				}
 				
+				if( ( ( visualObj.type === 'entity' || visualObj.type === 'value' ) && childObj.className === 'Rect' ) 
+				|| ( master.rule.ruleTypes[ visualObj.type ] === true && childObj.type === 'ruleCircle' ) ){
+					tempObj.moveToBottom();	
+				}
 			}
 		}
 		
@@ -258,15 +263,18 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 		
 		//Get children of canvas object
 		var children = canvasGroup.getChildren().toArray();
+		var tempChildren = this.stage.find( '.' + _id ).toArray()
+		if( tempChildren != undefined )
+			children.push.apply( children, tempChildren );
 		
 		/*	Loop through the canvas objects children with an ID 
 		 * 	All objects on the visual model, and only objects on the visual model,
 		 * 	will have an ID set (others may have a name, but not an ID)
-		 */
+		 */	
 		for( var i = 0; i < children.length; i++ ){
 			var child = children[i];
 			
-			if( child.getId() != undefined ){
+			if( child.id() != undefined ){
 				//Use the ID to find it on the visual model
 				var visualModelChild = getObjPointer( master.model, child.getId() );
 				//If the child exists on the visualModel set its attributes, otherwise destory it
@@ -274,35 +282,9 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 					child.destroy();
 				} else {
 					child.setAttrs( visualModelChild.attr );
-					for( var linkRef in visualModelChild.links ){
-						if( linkRef !== 'empty' ){
-							this.line.moveLink( visualModelChild.links[ linkRef ] );
-						}
-					}
-				}
-			}
-		}
-		
-		//Get all objects with the name the same as the id, these are outside
-		var children = this.stage.find( '.' + _id ).toArray();
-		
-		/*	Loop through the canvas objects children with an ID 
-		 * 	All objects on the visual model, and only objects on the visual model,
-		 * 	will have an ID set (others may have a name, but not an ID)
-		 */
-		for( var i = 0; i < children.length; i++ ){
-			var child = children[i];
-			
-			if( child.getId() != undefined ){
-				//Use the ID to find it on the visual model
-				var visualModelChild = getObjPointer( master.model, child.getId() );
-				//If the child exists on the visualModel set its attributes, otherwise destory it
-				if( visualModelChild == undefined ){
-					child.destroy();
-				} else {
-					child.setAttrs( visualModelChild.attr );
-					if( typeof child.outside === 'boolean' && child.outside === true ){
-						child.sync();
+					if( ( ( visualObj.type === 'entity' || visualObj.type === 'value' ) && child.className === 'Rect' ) 
+					|| ( master.rule.ruleTypes[ visualObj.type ] === true && child.type === 'ruleCircle' ) ){
+						child.moveToBottom();	
 					}
 					for( var linkRef in visualModelChild.links ){
 						if( linkRef !== 'empty' ){
@@ -322,13 +304,18 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 			var canvasChild = this.stage.find( '#' + cleanObjPointer( visualModelChild.id ) )[0];
 			
 			if( canvasChild == undefined ){
-				var tempObj = new Kinetic[ visualModelChild["className"] ](
+				var tempObj = new Kinetic[ visualModelChild.className ](
 					visualModelChild.attr
 				);
 				if( typeof visualModelChild.outside !== 'undefined' && visualModelChild.outside === true ){
 					this.layer.add( tempObj );
 				} else {
 					canvasGroup.add( tempObj );	
+				}
+				
+				if( ( ( visualObj.type === 'entity' || visualObj.type === 'value' ) && visualModelChild.className === 'Rect' ) 
+				|| ( master.rule.ruleTypes[ visualObj.type ] === true && visualModelChild.type === 'ruleCircle' ) ){
+					tempObj.moveToBottom();	
 				}
 			}
 		}

@@ -213,7 +213,7 @@ function GetURLParameter(sParam)
  */
 function getPropertyCount( _obj, _NoCountEmpty ){
 	if( typeof _obj !== 'object' )
-		return 0;
+		return -1;
 		
 	var i = 0;
 	for( var ref in _obj ){
@@ -222,6 +222,23 @@ function getPropertyCount( _obj, _NoCountEmpty ){
 	}	
 		
 	return i;
+}
+
+function JSONEquals( _json1, _json2 ){
+	for( var ref in _json1 ){
+		var aProp = _json1[ ref ];
+		
+		//Note type of is the only comparison performed on functions, these shouldn't be in JSON anyway...
+		if( typeof aProp !== typeof _json2[ ref ] ){
+			return false;
+		} else if( typeof aProp === 'object' && JSONEquals( aProp, _json2[ ref ] ) === false ){
+			return false;
+		} else if ( typeof aProp !== 'object' && typeof aProp !== 'function' && aProp !== _json2[ ref ] ){
+			return false;
+		}
+	}
+	
+	return true;
 }
 
 /*	Adds and equals function to an array that compare the two array.

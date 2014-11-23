@@ -151,10 +151,8 @@ Transaction.prototype.validateTransaction = function( _transaction, _actionProce
 	if( _transaction.Actions == undefined || typeof _transaction.Actions != 'object' )
 		throwError( 'transaction.js', 'validateTransaction', 'Action is undefined or not an object' );
 		
-	var action = {};
-	var actionName = "";
-	for( actionName in _transaction.Actions ){
-		action = _transaction.Actions[ actionName ]; 
+	for( var actionName in _transaction.Actions ){
+		var action = _transaction.Actions[ actionName ]; 
 		
 		this.validateAction( action, _actionProcessed );  
 	} 
@@ -201,6 +199,29 @@ Transaction.prototype.validateAction = function( _action, _actionProcessed ){
 		
 }
 
+
+Transaction.prototype.changeMade = function( _transaction ){
+	for( var actionName in _transaction.Actions ){
+		var action = _transaction.Actions[ actionName ]; 
+		
+		if( action.commandType === 'insert' || action.commandType === 'delete' ){
+			return true;
+		}
+	}
+	
+	for( var actionName in _transaction.Actions ){
+		var action = _transaction.Actions[ actionName ]; 
+		
+		var obj = getObjPointer( master.model, action.objectID );
+		
+		if( JSONEquals( action.value, obj ) === false ){
+			return true;
+		}
+	}
+	
+	return false;
+}
+
 /*	processTransactions: takes a transaction as returned by createTransaction
  * 	and changes the underlying JSON model(s) per the actions within the
  * 	transaction. 
@@ -221,18 +242,24 @@ Transaction.prototype.processTransactions = function( _transaction ){
 	var fullModelTrans = {};
 	
 	//Validate parameters
-	var name = ""
-	var newTransaction = {};
-	for( name in _transaction ){
-		newTransaction = _transaction[name];
+	var changeMade = false;
+	for( var name in _transaction ){
+		var newTransaction = _transaction[name];
 		
 		try{
-			this.validateTransaction( newTransaction );  
+			this.validateTransaction( newTransaction );
+			if( changeMade === false )
+				changeMade = this.changeMade( newTransaction );
 		}catch(err){
 			criticalError();
 			throwError( 'transaction.js', 'processTransactions', 'passed parameter was not valid' );
 			return;
 		}
+	}
+	
+	//If none of the action actually change anything, then don't run the transaction
+	if( changeMade === false ){
+		return;
 	}
 	
 	//Loop through every transaction in the passed transaction
@@ -265,6 +292,9 @@ Transaction.prototype.processTransactions = function( _transaction ){
 			throwError( 'transaction.js', 'processTransactionsCloudHelper', err.message );
 		}
 	}
+	
+	//Store fullModelTrans in the undo log
+	master.undo.addToUndo( fullModelTrans );
 	
 	/*	Store the fullModelTrans in the cloud, the cloud will send it
 	 * 	back for local storage (function is on transaction.cloud.js)

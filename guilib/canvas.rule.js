@@ -16,7 +16,7 @@ function CanvasRule(){
   		, "unique" : {
   			"uniqueSymbol" : this.uniqueSymbol
   		}
-  		, "primary" : {
+  		, "primary unique" : {
   			"primarySymbol" : this.primarySymbol
   			, "primarySymbol2" : this.primarySymbol2
   		}

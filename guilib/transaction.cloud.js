@@ -374,6 +374,7 @@ Transaction.prototype.setListeners = function(){
 	var modelObjects = this.fbModel.child( 'TransactionLog' );
 	modelObjects.on( 'child_added', function( childSnapshot ){
 		cloudInsertNoVersion( master.model.TransactionLog, childSnapshot, false );
+		master.undo.checkRemoteTransactionAgainstUndo( childSnapshot.val() );
 	});
 	modelObjects.on( 'child_changed', function( childSnapshot ){
 		cloudUpdateNoVersion( master.model.TransactionLog, childSnapshot, false );

@@ -984,12 +984,14 @@ function makeInteractive( _group, _type ){
 	
 	if( nw && ne && se && sw )
 		return;
-		
+	
+	/*		
 	_group.getChildren().each(function( shape, n ){
 		if( shape.getClassName() === 'Rect' ){
 			shape.moveToBottom();
 		}
 	});
+	*/
 	
 	maxWidth = _group.getWidth();
 	maxHeight = _group.getHeight();
@@ -1010,20 +1012,22 @@ function makeInteractive( _group, _type ){
 	_group.on('click touchstart', function(e){
 		if( _group.getAttr( 'disabled' ) ) return;
 		
-		if( !_group.getAttr( 'selected' ) || Kinetic.multiSelect != null || !e.evt.shiftKey || !e.evt.ctrlKey ){
-			//If shif and cntrl were not held during the click
-			if( !e.evt.shiftKey && !e.evt.ctrlKey ){
-				deselect();
-				select( _group );
-			} else if ( _group.getAttr( 'selected' ) ) {
-			//If shif or cntrl were held during the click and object was already selected
-				deselect( _group );
-			} else {
-			//If shif and cntrl were held during the click and object was not already selected
-				select( _group );
-			}
-			
+		if( !_group.getAttr( 'selected' ) && !e.evt.shiftKey && !e.evt.ctrlKey ){
+			deselect();
+			select( _group );
 			selectStyle();
+		} else if ( _group.getAttr( 'selected' ) && ( e.evt.shiftKey || e.evt.ctrlKey ) ){
+			deselect( _group );
+			selectStyle();
+		} else if ( !_group.getAttr( 'selected' ) && ( e.evt.shiftKey || e.evt.ctrlKey ) ){
+			//If shif and cntrl were held during the click and object was not already selected
+			select( _group );
+			selectStyle();
+		} else if ( _group.getAttr( 'selected' ) && Kinetic.multiSelect == null ) {
+			if( typeof _type != 'undefined' && _type === 'objects' ){
+				master.canvas.ormObj.openEditName( _group.id() );
+				deselect( _group );
+			}
 		}
 	});
 	
@@ -1067,14 +1071,13 @@ function makeInteractive( _group, _type ){
 		master.canvas.ormObj.visualOnlySync();
 	});
 	
-	if( typeof _type !== 'undefined' && _type === 'objects' ){
+	if( typeof _type != 'undefined' && _type === 'objects' ){
 		_group.on('dblclick dbltap', function(){
 			if( _group.getAttr( 'disabled' ) ) return;
 			
-			master.canvas.ormObj.openEditName( _group.id() );
-			deselect( _group );
+			master.ormObj.openProperties( _group.id() );
 		});
-	} else if ( typeof _type !== 'undefined' && _type === 'predicate' ){
+	} else if ( typeof _type != 'undefined' && _type === 'predicate' ){
 		_group.on('dblclick dbltap', function(){
 			if( _group.getAttr('disabled') ) return;
 			

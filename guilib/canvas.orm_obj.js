@@ -158,6 +158,131 @@ CanvasORMObj.prototype.visualOnlySync = function(){
 	}
 }
 
+CanvasORMObj.prototype.saveProperties = function( _modelPK ){
+	var visualGroup = cloneJSON( master.ormObj.visualGroup );
+	
+	var pkProp = $('#obj_pk').val();
+	var nameProp = $('#obj_name').val();
+	var typeProp = $('#obj_type').val();
+	
+	var visualNameUUID = null
+	var visualName = null;
+	var visualPKUUID = null;
+	var visualPK = null;
+	var visualRectUUID = null;
+	var visualRect = null;
+	
+	var width = 0;
+	
+	for( var ref in visualGroup.objects ){
+	if( ref !== 'empty' ){
+		if( visualGroup.objects[ ref ].type === 'name' ){
+			visualNameUUID = ref;
+			visualName = visualGroup.objects[ ref ];
+		} else if ( visualGroup.objects[ ref ].type === 'pk' ) {
+			visualPKUUID = ref;
+			visualPK = visualGroup.objects[ ref ];
+		} else if ( visualGroup.objects[ ref ].className === 'Rect' ) {
+			visualRectUUID = ref;
+			visualRect = visualGroup.objects[ ref ];
+		}
+	}
+	}
+	
+	if( visualName != undefined && visualName.attr.text !== nameProp ){
+		visualGroup.objects[ visualNameUUID ].attr.text = nameProp;
+		visualGroup.objects[ visualNameUUID ].attr.x = this.nameTempalte.x
+		visualGroup.objects[ visualNameUUID ].attr.width = 'auto';
+		
+		var tempText = new Kinetic.Text( visualGroup.objects[ visualNameUUID ].attr );
+		width = tempText.width(); 
+	} else if ( visualName == undefined && nameProp !== '' ){
+		if( pkProp === '' ){
+			visualNameAttr = cloneJSON( this.nameTempalte );	
+		} else {
+			visualNameAttr = cloneJSON( this.nameAndPKTemplate );
+		}
+		var visualNameUUID = uuid.v4();
+
+		visualNameAttr.id = visualGroup.id + '/objects/' + visualNameUUID;
+		visualNameAttr.text = nameProp;
+		visualNameAttr.y *= visualRect.attr.height;
+		
+		var tempText = new Kinetic.Text( visualNameAttr );
+		width = tempText.width();
+		
+		visualGroup.objects[ visualNameUUID ] = {
+		    "id": visualNameAttr.id,
+		    "modelID": visualGroup.modelID + '/name',
+		    "parentID" : visualGroup.id, 
+		    "type" : "name",
+		    "className": "Text",
+		    "attr": visualNameAttr,
+		    "functions": {},
+		    "links": { "empty":"" }
+		};
+	}
+	
+	if( visualPK != undefined && pkProp === '' ){
+		delete visualGroup.objects[ visualPKUUID ];
+		
+		if( visualName != undefined ){
+			visualGroup.objects[ visualNameUUID ].attr.y = ( visualRect.attr.height * this.nameTempalte.y );
+		}
+	} else if ( visualPK != undefined && visualPK.attr.text !== pkProp ){
+		visualGroup.objects[ visualPKUUID ].attr.text = pkProp;
+		
+		var tempText = new Kinetic.Text( visualGroup.objects[ visualPKUUID ].attr );
+		width = ( width > tempText.width() ) ? width : tempText.width();
+	} else if ( visualPK == undefined && pkProp !== '' ){
+		visualPKAttr = cloneJSON( this.pkTemplate );
+		var visualPKUUID = uuid.v4();
+
+		visualPKAttr.id = visualGroup.id + '/objects/' + visualPKUUID;
+		visualPKAttr.text = '(' + pkProp + ')';
+		visualPKAttr.y *= visualRect.attr.height;
+		
+		var tempText = new Kinetic.Text( visualPKAttr );
+		width = ( width > tempText.width() ) ? width : tempText.width();
+		
+		visualGroup.objects[ visualPKUUID ] = {
+		    "id": visualPKAttr.id,
+		    "modelID": _modelPK,
+		    "parentID" : visualGroup.id, 
+		    "type" : "pk",
+		    "className": "Text",
+		    "attr": visualPKAttr,
+		    "functions": {},
+		    "links": { "empty":"" }
+		};
+		
+		if( visualName != undefined ){
+			visualGroup.objects[ visualNameUUID ].attr.y = ( visualRect.attr.height * this.nameAndPKTemplate.y );
+		}
+	}
+	
+	if( visualGroup.type != typeProp ){
+		visualGroup.type = typeProp;
+		
+		if( visualGroup.type === 'entity' ){
+			delete visualGroup.objects[ visualRectUUID ].attr.dash;
+		} else if( visualGroup.type === 'value' ) {
+			visualGroup.objects[ visualRectUUID ].attr.dash = cloneJSON( this.valueTemplate.dash );
+		}
+	}
+	
+	var rectWidth = visualGroup.objects[ visualRectUUID ].attr.width;
+	visualGroup.objects[ visualRectUUID ].attr.width = ( width + 10 > rectWidth ) ? width + 10 : rectWidth;
+	
+	return [
+		{	
+			"objectID" : visualGroup.id,
+			"commandType" : "update",
+			"value" : visualGroup
+		}
+	]
+}
+
 /*	addObj: add a new objects.
  * 	
  * 	Params:
@@ -461,7 +586,7 @@ CanvasORMObj.prototype.openEditName = function( _id ){
 	var rect;
 	for( var ref in _id.objects ){
 		var object = _id.objects[ref];
-		if( object.modelID != undefined && object.modelID.match( this.NAME_REG_EX ) ){
+		if( object.modelID != undefined && object.modelID.match( this.NAME_REG_EX ) != null ){
 			name = object.attr.text;
 			var objName = master.canvas.stage.find( '#' + object.id );
 			if( objName.length > 0 ){
@@ -511,7 +636,7 @@ CanvasORMObj.prototype.openEditName = function( _id ){
 		//Find name if it exists and set it back to show 
 		for( var ref in _id.objects ){
 			var object = _id.objects[ref];
-			if( object.modelID != undefined && object.modelID.match( this.NAME_REG_EX ) ){
+			if( object.modelID != undefined && object.modelID.match( this.NAME_REG_EX ) != null ){
 				var objName = master.canvas.stage.find( '#' + object.id );
 				if( objName.length > 0 )
 					objName[0].show();
@@ -565,7 +690,7 @@ CanvasORMObj.prototype.editName = function( _id, _value ){
 	var rect = null;
 	for( var ref in objects ){
 		var aObject = objects[ref];
-		if( aObject.modelID != undefined && aObject.modelID.match( this.NAME_REG_EX ) )
+		if( aObject.modelID != undefined && aObject.modelID.match( this.NAME_REG_EX ) != null )
 			name = aObject;
 
 		if( aObject.className === 'Rect' )
@@ -582,7 +707,7 @@ CanvasORMObj.prototype.editName = function( _id, _value ){
 		
 		for( var ref in objects ){
 			var aObject = objects[ref];
-			if( aObject.className != undefined && aObject.className === 'Text' && !aObject.modelID.match( this.NAME_REG_EX ) ){
+			if( aObject.className != undefined && aObject.className === 'Text' && aObject.modelID.match( this.NAME_REG_EX ) == null ){
 				template = this.nameAndPKTemplate;
 				break
 			}
@@ -613,10 +738,11 @@ CanvasORMObj.prototype.editName = function( _id, _value ){
 		    "functions": {},
 		    "links": { "empty":"" }
 		};
-		
 	} else {
 		name.attr.text = _value;
-		delete name.attr.visible
+		name.attr.x = this.nameTempalte.x
+		name.attr.width = 'auto';
+		delete name.attr.visible;
 		master.canvas.stage.find( '#' + name.id )[0].show();
 	}
 	

@@ -45,9 +45,9 @@ Line.prototype.createLine = function( _modelID1, _modelID2 ){
 		throwError( 'line.js', 'createLine', 'The passed model ID, ' + _modelID2 + ', does not exist in the model' );
 	}
 	
-	if( model1.id.match( this.relationshipIDRegEx ) && model2.id.match( this.relationshipIDRegEx ) ){
+	if( model1.id.match( this.relationshipIDRegEx ) != null && model2.id.match( this.relationshipIDRegEx ) != null ){
 		//Create an ouside model rule
-	} else if( model1.id.match( this.relationshipIDRegEx ) ){ 
+	} else if( model1.id.match( this.relationshipIDRegEx ) != null ){ 
 		var modelRelationship = getObjPointer( master.model, model1.parentID );
 		if( modelRelationship == undefined ){
 			throwError( 'line.js', 'createLine', 'The parent id for the model relationship connector' + model1.id + ' did not corispond to a model relationship' );
@@ -55,7 +55,7 @@ Line.prototype.createLine = function( _modelID1, _modelID2 ){
 		modelRelationship = cloneJSON( modelRelationship );
 		modelConnector = model1;
 		newModelObject = model2;
-	} else if ( model2.id.match( this.relationshipIDRegEx ) ){
+	} else if ( model2.id.match( this.relationshipIDRegEx ) != null ){
 		var modelRelationship = getObjPointer( master.model, model2.parentID );
 		if( modelRelationship == undefined ){
 			throwError( 'line.js', 'createLine', 'The parent id for the model relationship connector' + model1.id + ' did not corispond to a model relationship' );
@@ -201,7 +201,7 @@ Line.prototype.createUnary = function( _id ){
  * 	the predicate object, insert new rules and delete rules that no longer
  * 	apply.
  */
-Line.prototype.saveEditPredicate = function(){
+Line.prototype.saveEditPredicate = function( _closeOnFinish ){
 	//Get data from master.canvas.line
 	var data = master.canvas.line.activePred;
 	var uniques = master.canvas.line.uniques;
@@ -292,7 +292,7 @@ Line.prototype.saveEditPredicate = function(){
 				searched[ searched.length ] = aModelRule.id;
 				
 				//If the type is for a kind of unique
-				if( this.uniqueTypes[ aModelRule.type ] === true ){	
+				if( master.rule.uniqueTypes[ aModelRule.type ] === true ){	
 					var found = false;
 					for( var ref in uniques ){
 						if( this.uniqueRuleAndUniqueEqual( aModelRule, uniques[ ref ].uniques, data ) ){
@@ -521,12 +521,12 @@ Line.prototype.saveEditPredicate = function(){
 	
 	var modelRules = {};
 	for( i = 0; i < actions.length; i++ ){
-		if( actions[i].objectID.match( master.rule.ruleIDRegEx ) ){
+		if( actions[i].objectID.match( master.rule.ruleIDRegEx ) != null ){
 			modelRules[ actions[i].objectID ] = ( actions[i].commandType === 'delete' ) ? false : actions[i].value;	
 		}
 	}
 		
-	try{
+	//try{
 		var trans = master.transaction.createTransaction( "Model", actions );
 		
 		var visualActions = master.canvas.line.syncPredicate( fullPred, modelRules );
@@ -535,15 +535,19 @@ Line.prototype.saveEditPredicate = function(){
 		
 		master.transaction.processTransactions( trans );
 		
-		master.canvas.line.editPredicate( master.canvas.line.activePredID );
-	}catch(err){
+		if( _closeOnFinish === true ){
+			master.canvas.line.closeEditPred();
+		} else {
+			master.canvas.line.editPredicate( master.canvas.line.activePredID );
+		}
+	/*}catch(err){
 		throwError( 'line.js', 'createLine', err.message, false );
 		return;
-	}
+	}*/
 }
 
 Line.prototype.uniqueRuleAndUniqueEqual = function( _aRule, _aUnique, _data ){
-	if( this.uniqueTypes[ _aRule.type ] === true ){
+	if( master.rule.uniqueTypes[ _aRule.type ] === true ){
 		//Loop though each connector in the rule
 		var found = false;
 		var ruleLength = 0;
@@ -581,10 +585,12 @@ Line.prototype.deleteRelationship = function( _id, _integrateWith ){
 	if( typeof _integrateWith !== 'object' ){
 		_integrateWith = {};
 	}
+	var touched = {};
 	
-	actions = [];
+	var actions = [];
 	
-	actions[ actions.length ] = { "objectID" : aModelRelationship.id,
+	actions[ actions.length ] = { 
+		"objectID" : aModelRelationship.id,
 		"commandType" : "delete",
 		"value": null
 	}
@@ -620,6 +626,7 @@ Line.prototype.deleteRelationship = function( _id, _integrateWith ){
 				}
 			} else {
 				delete aModelRule.ModelRuleConditions[ ruleConRef ];
+				touched[ aModelRule.id ] = aModelRule;
 			}
 		}
 		}
@@ -640,13 +647,13 @@ Line.prototype.deleteRelationship = function( _id, _integrateWith ){
 			var aModelObjectUUID = getPointerUUID( ModelRelationshipConnectors.id );
 			
 			delete aModelObject.ModelRelationshipConnectors[ aModelObjectUUID ];
-			var a = 0;
+			touched[ aModelObject.id ] = aModelObject;
 		}
 	}
 	}
 	
-	for( var ref in _integrateWith ){
-		var aObj = _integrateWith[ ref ];
+	for( var ref in touched ){
+		var aObj = touched[ ref ];
 		
 		var deleted = false;
 		for( var i = 0; i < actions.length; i++ ){
@@ -669,14 +676,15 @@ Line.prototype.deleteRelationship = function( _id, _integrateWith ){
 }
 
 Line.prototype.ruleInsidePred = function( _aModelRule, _aModelPred ){
-	var predRegExp = new RegExp( _aModelRule.id );
+	var predRegExp = new RegExp( _aModelPred.id );
+	var predRegExp = new RegExp( _aModelPred.id );
 	
 	for( var ref in _aModelRule.ModelRuleConditions ){
 	if( ref !== 'empty' ){
 		var aModelRuleConditionLink = _aModelRule.ModelRuleConditions[ ref ];
 		
 		//	If at least one Model Rule Condition isn't linked to this model relationship then don't delete
-		if( aModelRuleConditionLink.ModelRelationshipConnectorID.match( predRegExp ) ) {
+		if( aModelRuleConditionLink.ModelRelationshipConnectorID.match( predRegExp ) == null ) {
 			return false;
 		}
 	}

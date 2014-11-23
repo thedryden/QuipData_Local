@@ -35,6 +35,8 @@ function Master( _fbModelRef, _fbToken, _userID, _userName, _unitTest ){
 	this.transaction = new Transaction();
 	//Starts cloud connections piece of Transactions	
 	this.transaction.cloudInit( _fbModelRef, _fbToken );
+	//Create local only undo log
+	this.undo = new Undo();
 	
 	//Starts the chat client
 	this.chat = new Chat( _fbModelRef, _fbToken, this.userName );
@@ -72,7 +74,10 @@ function Master( _fbModelRef, _fbToken, _userID, _userName, _unitTest ){
 		//Make the mass add tool dragable
 		$( "#wandering_mass_add" ).draggable({ handle : "#wander_mass_add_bar" });
 		
-		//Make the font style wandering div draggable
+		//Make the object proprty wandering div draggable
+		$( "#wander_obj_prop" ).draggable({ handle : "#wander_obj_prop_bar" });
+		
+		//Make the line property wandering div draggable
 		$( "#wander_line_prop" ).draggable({ handle : "#wander_line_prop_bar" });
 			
 		/*	Put up a blocking div over the UI until the loaded parameter in the model is set to true

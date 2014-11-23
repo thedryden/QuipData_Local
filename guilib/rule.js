@@ -69,11 +69,11 @@ Rule.prototype.createRule = function( _modelID1, _modelID2 ){
 	
 	var actions = [];
 	
-	if( model1.id.match( this.ruleIDRegEx ) && model2.id.match( this.ruleIDRegEx ) ){
+	if( model1.id.match( this.ruleIDRegEx ) != null && model2.id.match( this.ruleIDRegEx ) != null ){
 		//Can't connect two rules
 		alert( 'You cannot build a rule between two rules, at least one side must be a role.' );
 		return;
-	} else if ( model1.id.match( master.line.relationshipIDRegEx ) && model2.id.match( master.line.relationshipIDRegEx ) ){
+	} else if ( model1.id.match( master.line.relationshipIDRegEx ) != null && model2.id.match( master.line.relationshipIDRegEx ) != null ){
 	//Create new rules
 		var modelRelationshipCon1 = cloneJSON( model1 );
 		var modelRelationshipCon2 = cloneJSON( model2 ); 
@@ -144,10 +144,10 @@ Rule.prototype.createRule = function( _modelID1, _modelID2 ){
 		}
 		
 		return;
-	} else if( model1.id.match( this.ruleIDRegEx ) ){
+	} else if( model1.id.match( this.ruleIDRegEx ) != null ){
 		var modelRule = cloneJSON( model1 );
 		var modelRelationshipConnector = cloneJSON( model2 );
-	} else if ( model2.id.match( this.ruleIDRegEx ) ){
+	} else if ( model2.id.match( this.ruleIDRegEx ) != null ){
 		var modelRule = cloneJSON( model2 );
 		var modelRelationshipConnector = cloneJSON( model1 );
 	}
@@ -269,7 +269,9 @@ Rule.prototype.deleteRule = function( _id, _integrateWith ){
 		_integrateWith = {};
 	}
 	
-	actions = [];
+	var touched = {};
+	
+	var actions = [];
 	
 	actions[ actions.length ] = { "objectID" : aModelRule.id,
 		"commandType" : "delete",
@@ -300,11 +302,12 @@ Rule.prototype.deleteRule = function( _id, _integrateWith ){
 		var aModelRelationshipConUUID = getPointerUUID( aModelRelationshipCon.id );
 		
 		delete aModelRelationship.ModelRelationshipConnectors[ aModelRelationshipConUUID ].modelRuleConditions[ ref ]
+		touched[ aModelRelationship.id ] = aModelRelationship;
 	}
 	}
 	
-	for( var ref in _integrateWith ){
-		var aObj = _integrateWith[ ref ]; 
+	for( var ref in touched ){
+		var aObj = touched[ ref ]; 
 		
 		actions[ actions.length ] = {
 			"objectID" : aObj.id,

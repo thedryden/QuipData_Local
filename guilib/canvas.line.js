@@ -541,7 +541,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 			//If type is not roleRect
 			} else {
 				//If the visual's modelID is for a rule
-				if( aVisualObject.modelID.match( master.rule.ruleIDRegEx ) ){
+				if( aVisualObject.modelID.match( master.rule.ruleIDRegEx ) != null ){
 					var found = typeof this.syncPredicateHelperGetRule( aVisualObject.modelID, _newRules ) !== 'undefined';
 					
 					if( found === false ){
@@ -722,7 +722,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 					
 					//If the rules was not found proceed.
 					//Logic Note: Unique rules are not altered they are deleted and remade.
-					if( found === false && master.line.ruleInsidePred( aModelRule, visualModel ) === true ){
+					if( found === false && master.line.ruleInsidePred( aModelRule, modelObj ) === true ){
 						//Create an ordered unique array for eaiser processing
 						var aUnique = [];
 						for( var ref in aModelRule.ModelRuleConditions ){
@@ -1033,24 +1033,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 						}
 					}
 				} else if ( aModelRule.type === 'required' ){
-					var inside = true;
-					for( var ref in aModelRule.ModelRuleConditions ){
-					if( ref !== 'empty' ){
-						var aModelRuleCondition = aModelRule.ModelRuleConditions[ ref ];
-						
-						var found = false;
-						for( var i = 0 ; i < modelRelationships.length; i++ ){
-							if( modelRelationships[ i ].modelRelationship.id === aModelRuleCondition.ModelRelationshipConnectorID ){
-								found = true;
-								break;
-							}
-						}
-						if( found === false ){
-							inside = false;
-							break;
-						}
-					}
-					}
+					var inside = master.line.ruleInsidePred( aModelRule, modelObj );
 					
 					if( inside === true ){
 						for( var linkRef in pair.visualObject.links ){
@@ -1288,7 +1271,7 @@ CanvasLine.prototype.syncPredicateHelperGetRule = function( _childRuleID, _newRu
 		if( objDeleted === false )
 			return undefined;
 	
-		if( aModelRule.id.match( master.rule.ruleIDRegEx ) && typeof aModelRule.parentID === 'undefined' )
+		if( aModelRule.id.match( master.rule.ruleIDRegEx ) != null && typeof aModelRule.parentID === 'undefined' )
 			return aModelRule;
 				
 		var aModelRule = getObjPointer( master.model, aModelRule.parentID );
@@ -2018,7 +2001,7 @@ CanvasLine.prototype.editPredicate = function( _id ){
 			var aModelRule = getObjPointer( master.model, this.activePred[ api ].modelObj.modelRuleConditions[ ruleRef ] );
 			var aModelRule = getObjPointer( master.model, aModelRule.parentID );
 			
-			if( master.line.ruleInsidePred( aModelRule, visualPred ) === true ){
+			if( master.line.ruleInsidePred( aModelRule, modelPred ) === true ){
 				if( master.rule.uniqueTypes[ aModelRule.type ] === true ){
 					if( aModelRule.type.substring( 0, 7 ) === 'primary' ){
 						this.primary = true;
