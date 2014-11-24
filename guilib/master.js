@@ -87,6 +87,16 @@ function Master( _fbModelRef, _fbToken, _userID, _userName, _unitTest ){
 			openBlockingAlert( 'Loading please wait...' );	
 		}
 		
+		//Keypress bindings for hot keys
+		$('html').on( 'keydown.undo', function( e ){
+			//Undo
+			if( e.ctrlKey && ( e.which === 89 || e.which ===	121 ) )
+				master.undo.redo();
+			//Redo
+			if( e.ctrlKey && ( e.which === 90 || e.which ===	122 ) )
+				master.undo.undo();
+		});
+		
 		//Initiate the canvas object
 		master.canvas = new Canvas();
 		

@@ -1019,7 +1019,7 @@ function makeInteractive( _group, _type ){
 		} else if ( _group.getAttr( 'selected' ) && ( e.evt.shiftKey || e.evt.ctrlKey ) ){
 			deselect( _group );
 			selectStyle();
-		} else if ( !_group.getAttr( 'selected' ) && ( e.evt.shiftKey || e.evt.ctrlKey ) ){
+		} else if ( _group.getAttr( 'selected' ) !== true && ( e.evt.shiftKey || e.evt.ctrlKey ) ){
 			//If shif and cntrl were held during the click and object was not already selected
 			select( _group );
 			selectStyle();

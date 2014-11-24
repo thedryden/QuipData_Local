@@ -44,13 +44,12 @@
 		//var master = new Master( '{{FirebaseRef}}',, '{{fb_token}}', '{{UserUUID}}', '{{UserName}}' );
 		
 		var id = GetURLParameter('userid');
-		id = ( id == undefined ) ? '1eb5a6cc-c5bf-4907-be2b-c542dc912f27' : id;
+		id = ( id == undefined || id === 'undefined' ) ? '1eb5a6cc-c5bf-4907-be2b-c542dc912f27' : id;
 		console.log( "id: " + id );
 		
 		var name = GetURLParameter('username');
-		name = ( name == undefined ) ? 'thedryden' : name;
+		name = ( name == undefined || name === 'undefined' ) ? 'thedryden' : name;
 		console.log( "name: " + name );
-		
 		
 		var master = new Master( 'https://vivid-fire-1112.firebaseio.com/files/086c81c0-8a0f-4cb9-88a0-66c764cf4fda'
 			, ''
@@ -73,8 +72,8 @@
 		<span name="ribbon_chat" id="ribbon_chat" class="icon" onclick="master.chat.toggle()"><div class="sprite comments"></div>Chat</span>
 		<span class="icon"><div class="sprite error"></div>Errors</span>
 		<span class="icon"><div class="sprite funnel"></div>Filter</span>
-		<span class="icon" onclick="master.undo.undo();"><div class="sprite funnel"></div>Undo</span>
-		<span class="icon" onclick="master.undo.redo();"><div class="sprite funnel"></div>Redo</span>
+		<span class="icon" onclick="master.undo.undo();"><div class="sprite undo"></div>Undo</span>
+		<span class="icon" onclick="master.undo.redo();"><div class="sprite redo"></div>Redo</span>
 		<span class="icon" onclick="emptyModel()"><div class="sprite error"></div>Reset</span>
 		<script>function emptyModel(){ master.transaction.fbModel.set( $.parseJSON( '{"Model":{"Model":{"ModelObjects":{"empty":""},"ModelRelationships":{"empty":""},"ModelRules":{"empty":""},"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"metadata":{"createdOn":"","creator":"","editors":"","id":"","modifiedDate":"","name":"","type":""}},"ModelRefs":{"empty":""}},"TransactionLog":{"empty":""},"VisualModel":{"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"comments":{"empty":""},"groups":{"empty":""},"links":{"empty":""},"metadata":{"id":"","name":"","type":""}},"loaded":true}' ) ) }</script>
 	</div>
