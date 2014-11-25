@@ -275,6 +275,7 @@ ORMOBJ.prototype.openProperties = function( _id ){
 	}
 	
 	$('#wander_obj_prop').show();
+	$('#obj_name').focus();
 }
 
 ORMOBJ.prototype.closeProperties = function(){
@@ -296,6 +297,13 @@ ORMOBJ.prototype.changeTypeProperties = function(){
 		$('#p_obj_type').hide();
 	}
 	
+}
+
+//Called on keypress in certain fields, if enter was press run saveProperties
+ORMOBJ.prototype.savePropertiesOnEnter = function( e ){
+	if( e.which == 13 || e.which == 10 ){
+		master.ormObj.saveProperties( true );
+	}
 }
 
 ORMOBJ.prototype.saveProperties = function( _closeOnFinish ){
@@ -346,7 +354,7 @@ ORMOBJ.prototype.saveProperties = function( _closeOnFinish ){
 		
 		//Create new Model Relationship to link PK value with existing object
 		var modelRelationshipUUID = uuid.v4();
-		var modelRelationship = cloneJSON( master.line.lineTemplate );
+		var modelRelationship = cloneJSON( master.line.relationshipTemplate );
 		modelRelationship.objectID = modelRelationship.objectID.replace( 'UUID', modelRelationshipUUID );
 		modelRelationship.value.id = modelRelationship.objectID;
 		modelRelationship.value.Role = 'primary key';

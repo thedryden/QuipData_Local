@@ -69,6 +69,7 @@ function CanvasORMObj(){
 		fontFamily: 'Calibri',
 		fill: 'black',
 		text: 'REPLACE_ME',
+		wrap: "none",
 		id: 'UUID'
   	}
 	
@@ -84,6 +85,7 @@ function CanvasORMObj(){
 		fontFamily: 'Calibri',
 		fill: 'black',
 		text: 'REPLACE_ME',
+		wrap: "none",
 		id: 'UUID'
   	}
   	
@@ -99,6 +101,7 @@ function CanvasORMObj(){
 		fontFamily: 'Calibri',
 		fill: 'black',
 		text: '(REPLACE_ME)',
+		wrap: "none",
 		id: 'UUID'
   	}
   	
@@ -454,7 +457,10 @@ CanvasORMObj.prototype.cloneCanvasDefault = function( _id ){
 	if( visualObj.objects != undefined ){
 		var nameText = null;
 		var nameCanvas = null;
+		var pkCanvas = null;
 		var pkText = null; 
+		
+		var width = 0;
 		
 		for( var objRef in visualObj.objects ){
 			var childObj = visualObj.objects[objRef];
@@ -511,8 +517,12 @@ CanvasORMObj.prototype.cloneCanvasDefault = function( _id ){
 					var height = this.valueTemplate.height;
 				}
 				
-				attr.x = height * this.pkTemplate.x;
-				attr.y = this.pkTemplate.y;
+				attr.x = this.pkTemplate.x;
+				attr.y = height * this.pkTemplate.y;
+				
+				var tempCanvas = tempObj = new Kinetic[childObj.className](
+					attr
+				);
 				
 				if( nameText !== null ){
 					nameCanvas.x( this.nameAndPKTemplate.x );
@@ -527,11 +537,40 @@ CanvasORMObj.prototype.cloneCanvasDefault = function( _id ){
 			
 			if( childObj.type === 'name' ){
 				nameCanvas = tempObj;
+			} else if( childObj.type === 'pk' ){
+				pkCanvas = tempObj;
 			} else if ( childObj.className === 'Rect' ){				
+				rectCanvas = tempObj;
 				tempObj.moveToBottom();
 			}
 		}
 	}
+	
+	if( nameCanvas != undefined ){
+		width = nameCanvas.width(); 
+	}
+	
+	if( pkCanvas != undefined && pkCanvas.width() > width ){
+		width = pkCanvas.width();
+	}
+	
+	width += 10;
+	
+	if( width > rectCanvas.width() ){
+		if( width > ( rectCanvas.width() * 2 ) ){
+			width = rectCanvas.width() * 2
+			
+			if( nameCanvas != undefined ){
+				nameCanvas.width( width - 20 ); 
+			}
+			
+			if( pkCanvas != undefined ){
+				pkCanvas.width( width - 20 ); 
+			}
+		}
+		
+		rectCanvas.width( width );
+	} 
 	
 	return canvasGroup;
 }

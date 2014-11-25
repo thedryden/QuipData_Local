@@ -1,5 +1,6 @@
 <html>
 <head>
+	<title>QuipData: ORM Tool</title>
 	<!--Foreign Libraries-->
 	<script src='https://cdn.firebase.com/js/client/1.0.11/firebase.js'></script>
 	<script src='vendor/jquery-2.1.1.min.js'></script>
@@ -51,7 +52,11 @@
 		name = ( name == undefined || name === 'undefined' ) ? 'thedryden' : name;
 		console.log( "name: " + name );
 		
-		var master = new Master( 'https://vivid-fire-1112.firebaseio.com/files/086c81c0-8a0f-4cb9-88a0-66c764cf4fda'
+		var firebaseUUID = GetURLParameter('firebaseUUID');
+		firebaseUUID = ( firebaseUUID == undefined || firebaseUUID === 'undefined' ) ? '086c81c0-8a0f-4cb9-88a0-66c764cf4fda' : firebaseUUID;
+		console.log( "firebaseUUID: " + firebaseUUID );
+		
+		var master = new Master( 'https://vivid-fire-1112.firebaseio.com/files/' + firebaseUUID
 			, ''
 			, id
 			, name );
@@ -63,19 +68,19 @@
 		<span name="tab_ribbon_view" id="tab_ribbon_view" class="ribbon_tab" onclick="selectRibbon( 'ribbon_view' )">View</span>
 	</div>
 	<div name="ribbon_file" id="ribbon_file" class="ribbon">
-		<span class="icon"><div class="sprite disk"></div>Save</span>
-		<span class="icon"><div class="sprite arrow_divide"></div>Save As</span>
+		<span class="icon" onclick="master.canvas.saveToImage()"><div class="sprite disk"></div>Save</span>
+		<!--<span class="icon"><div class="sprite arrow_divide"></div>Save As</span>
 		<span class="icon"><div class="sprite folder"></div>Open</span>
-		<span class="icon"><div class="sprite chart_organisation_add"></div>New</span>
+		<span class="icon"><div class="sprite chart_organisation_add"></div>New</span>-->
 	</div>
 	<div name="ribbon_view" id="ribbon_view" class="ribbon">
 		<span name="ribbon_chat" id="ribbon_chat" class="icon" onclick="master.chat.toggle()"><div class="sprite comments"></div>Chat</span>
-		<span class="icon"><div class="sprite error"></div>Errors</span>
-		<span class="icon"><div class="sprite funnel"></div>Filter</span>
+		<!--<span class="icon"><div class="sprite error"></div>Errors</span>
+		<span class="icon"><div class="sprite funnel"></div>Filter</span>-->
 		<span class="icon" onclick="master.undo.undo();"><div class="sprite undo"></div>Undo</span>
 		<span class="icon" onclick="master.undo.redo();"><div class="sprite redo"></div>Redo</span>
-		<span class="icon" onclick="emptyModel()"><div class="sprite error"></div>Reset</span>
-		<script>function emptyModel(){ master.transaction.fbModel.set( $.parseJSON( '{"Model":{"Model":{"ModelObjects":{"empty":""},"ModelRelationships":{"empty":""},"ModelRules":{"empty":""},"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"metadata":{"createdOn":"","creator":"","editors":"","id":"","modifiedDate":"","name":"","type":""}},"ModelRefs":{"empty":""}},"TransactionLog":{"empty":""},"VisualModel":{"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"comments":{"empty":""},"groups":{"empty":""},"links":{"empty":""},"metadata":{"id":"","name":"","type":""}},"loaded":true}' ) ) }</script>
+		<!--<span class="icon" onclick="emptyModel()"><div class="sprite error"></div>Reset</span>
+		<script>function emptyModel(){ master.transaction.fbModel.set( $.parseJSON( '{"Model":{"Model":{"ModelObjects":{"empty":""},"ModelRelationships":{"empty":""},"ModelRules":{"empty":""},"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"metadata":{"createdOn":"","creator":"","editors":"","id":"","modifiedDate":"","name":"","type":""}},"ModelRefs":{"empty":""}},"TransactionLog":{"empty":""},"VisualModel":{"TransactionLog":{"ObjectLogs":{"empty":""},"TransactionLog":{"empty":""},"Transactions":{"empty":""}},"comments":{"empty":""},"groups":{"empty":""},"links":{"empty":""},"metadata":{"id":"","name":"","type":""}},"loaded":true}' ) ) }</script>-->
 	</div>
 	<div name="icons" id="icons">
 		<script>closeAllAdd( 'icons_entity', function(){ master.ormObj.close( 'entity' ) } )</script>

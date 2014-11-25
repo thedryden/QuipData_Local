@@ -131,7 +131,7 @@ function openCanvasText( _x, _y, _defaultText, _closeOnEnter, _closeOnClick, _on
 			$('#canvas_text').on( 'keypress.canvasText', function( e ){
 				if( e.which == 13 || e.which == 10 ){
 					setTimeout( function(){ closeCanvasText() }, 500 );
-				}	
+				}
 			});
 		}, 500 );
 	}

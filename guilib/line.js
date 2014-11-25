@@ -272,6 +272,13 @@ Line.prototype.createInheritance = function( _modelIDA, _modelIDZ ){
 	}*/
 }
 
+//Called on keypress in certain fields, if enter was pressed run saveProperties
+Line.prototype.saveEditPredicateOnEnter = function( e ){
+	if( e.which == 13 || e.which == 10 ){
+		master.line.saveEditPredicate( true );
+	}
+}
+
 /*	saveEditPredicate: reads out the data stored in master.canvas.line
  * 	from using the eddit a predicate window and processes it to update
  * 	the predicate object, insert new rules and delete rules that no longer

@@ -155,6 +155,21 @@ Canvas.prototype.reset = function( _callback ){
 	}
 }
 
+Canvas.prototype.saveToImage = function(){
+	/*	since the stage toDataURL() method is asynchronous, we need
+	* 	to provide a callback
+	*/
+	this.stage.toDataURL({
+		callback: function(dataUrl) {
+			/*	here you can do anything you like with the data url.
+			 * 	In this tutorial we'll just open the url with the browser
+			 * 	so that you can see the result as an image
+			 */
+			window.open(dataUrl);
+		}
+	});
+}
+
 /*	processModelUI: takes an id to a location on the visual
  * 	model and a command type and sends the command to the 
  * 	appropreate function.

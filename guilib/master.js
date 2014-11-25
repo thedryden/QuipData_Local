@@ -97,6 +97,22 @@ function Master( _fbModelRef, _fbToken, _userID, _userName, _unitTest ){
 				master.undo.undo();
 		});
 		
+		$('#obj_name').on( 'keypress', function( e ){
+			master.ormObj.savePropertiesOnEnter( e );
+		});
+		
+		$('#obj_pk').on( 'keypress', function( e ){
+			master.ormObj.savePropertiesOnEnter( e );
+		});
+		
+		$('#role_label').on( 'keypress', function( e ){
+			master.line.saveEditPredicateOnEnter( e );
+		});
+		
+		$('#inverse_label').on( 'keypress', function( e ){
+			master.line.saveEditPredicateOnEnter( e );
+		});
+		
 		//Initiate the canvas object
 		master.canvas = new Canvas();
 		

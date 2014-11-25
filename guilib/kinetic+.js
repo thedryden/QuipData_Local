@@ -1159,7 +1159,7 @@ function makeInteractive( _group, _type ){
 		_group.on('dblclick dbltap', function(){
 			if( _group.getAttr( 'disabled' ) ) return;
 			
-			master.canvas.ormObj.openEditName( _group.id() );
+			master.ormObj.openProperties( _group.id() );
 			deselect( _group );
 		});
 	} else if ( typeof _type !== 'undefined' && _type === 'predicate' ){
@@ -1278,7 +1278,7 @@ function makeCircleSelectable( _group, _type ){
 		_group.on('dblclick dbltap', function(){
 			if( _group.getAttr( 'disabled' ) ) return;
 			
-			master.canvas.ormObj.openEditName( _group.id() );
+			master.ormObj.openProperties( _group.id() );
 			deselect( _group );
 		});
 	} else if ( typeof _type !== 'undefined' && _type === 'predicate' ){
