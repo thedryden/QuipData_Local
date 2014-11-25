@@ -156,10 +156,46 @@ Canvas.prototype.reset = function( _callback ){
 }
 
 Canvas.prototype.saveToImage = function(){
+	var minX = -1;
+	var minY = -1;
+	var maxX = 0;
+	var maxY = 0;
+	
+	for( var ref in master.model.VisualModel.groups ) {
+	if( ref !== 'empty' ){
+		var aVisualGroup = master.model.VisualModel.groups[ ref ];
+		var aCanvasGroup = this.stage.find( '#' + aVisualGroup.id )[0];
+		var x = aCanvasGroup.x();
+		var y = aCanvasGroup.y();
+		var width = aCanvasGroup.getWidth();
+		var height = aCanvasGroup.getHeight();
+		
+		if( minX === -1 || minX > aCanvasGroup.x() ){
+			minX = aVisualGroup.attr.x;
+		}
+		
+		if( minY === -1 || minY > aCanvasGroup.y() ){
+			minY = aVisualGroup.attr.y;
+		}
+		
+		if(  ( aCanvasGroup.x() + aCanvasGroup.getWidth() ) > maxX ){
+			maxX = aCanvasGroup.x() + aCanvasGroup.getWidth();
+		}
+			
+		if(  ( aCanvasGroup.y() + aCanvasGroup.getHeight() ) > maxY ){
+			maxY = aCanvasGroup.y() + aCanvasGroup.getHeight();
+		} 
+	} 
+	}
+
 	/*	since the stage toDataURL() method is asynchronous, we need
 	* 	to provide a callback
 	*/
 	this.stage.toDataURL({
+		x: minX - 10,
+		y: minY - 10,
+		width: maxX - minX + 10,
+		height: maxY - minY + 10,
 		callback: function(dataUrl) {
 			/*	here you can do anything you like with the data url.
 			 * 	In this tutorial we'll just open the url with the browser
