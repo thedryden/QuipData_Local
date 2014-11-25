@@ -87,20 +87,25 @@
 		
 		<script>closeAllAdd( 'icons_mass_add', function(){ master.ormObj.closeMassAdd( 'value' ) } )</script>
 		<span name="icons_mass_add" id="icons_mass_add" class="icon" onclick="closeAll( 'icons_mass_add' );master.ormObj.toggleMassAdd();"><div class="sprite object"></div>Objects</span>
-		<script>closeAllAdd( 'icons_line', function(){ master.line.close() } )</script>
-		<span name='icons_line' id='icons_line' class="icon" onclick="closeAll( 'icons_line' );master.line.toggle();"><div class="sprite line"></div>Line</span>
+		<script>closeAllAdd( 'icons_line', function(){ master.line.close( 'line' ) } )</script>
+		<span name='icons_line' id='icons_line' class="icon" onclick="closeAll( 'icons_line' );master.line.toggle( 'line' );"><div class="sprite line"></div>Line</span>
 		
 		<br />
 		
-		<script>closeAllAdd( 'icons_unary', function(){ master.line.close( true ) } )</script>
-		<span name='icons_unary' id='icons_unary' class="icon" onclick="closeAll( 'icons_unary' );master.line.toggle( true );"><div class="sprite unary_line"></div>Unary</span>
+		<script>closeAllAdd( 'icons_unary', function(){ master.line.close( 'unary' ) } )</script>
+		<span name='icons_unary' id='icons_unary' class="icon" onclick="closeAll( 'icons_unary' );master.line.toggle( 'unary' );"><div class="sprite unary_line"></div>Unary</span>
+		<script>closeAllAdd( 'icons_inheritance', function(){ master.line.close( 'inheritance' ) } )</script>
+		<span name='icons_inheritance' id='icons_inheritance' class="icon" style="font-size: .7em;" onclick="closeAll( 'icons_inheritance' );master.line.toggle( 'inheritance' );"><div class="sprite inheritance"></div>Inheritance</span>
+		
+		<br />
+				
 		<script>closeAllAdd( 'icons_required', function(){ master.rule.close( 'required' ) } )</script>
 		<span name='icons_required' id='icons_required' class="icon" style="font-size: .9em;" onclick="closeAll( 'icons_required' );master.rule.toggle( 'required' );"><div class="sprite required"></div>Required</span>
+		<script>closeAllAdd( 'icons_unique', function(){ master.rule.close( 'unique' ) } )</script>
+		<span name='icons_unique' id='icons_unique' class="icon" onclick="closeAll( 'icons_unique' );master.rule.toggle( 'unique' );"><div class="sprite unique"></div>Unique</span>
 		
 		<br />
 		
-		<script>closeAllAdd( 'icons_unique', function(){ master.rule.close( 'unique' ) } )</script>
-		<span name='icons_unique' id='icons_unique' class="icon" onclick="closeAll( 'icons_unique' );master.rule.toggle( 'unique' );"><div class="sprite unique"></div>Unique</span>
 		<script>closeAllAdd( 'icons_primary', function(){ master.rule.close( 'primary unique' ) } )</script>
 		<span name='icons_primary' id='icons_primary' class="icon" onclick="closeAll( 'icons_primary' );master.rule.toggle( 'primary unique' );"><div class="sprite primary"></div>Primary</span>
 	</div>

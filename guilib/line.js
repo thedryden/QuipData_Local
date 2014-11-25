@@ -1,38 +1,49 @@
 function Line(){
-	this.active = false;
-	this.unary = false;
-	
-	this.lineTemplate = {	
+	$( document ).ready(function(){
+		for( var ref in master.line.typeToIcon ){
+			master.line.typeToIcon[ ref ] = $('#' + master.line.typeToIcon[ ref ] ); 
+		} 
+		
+		var aTrue = true;
+	});
+}
+
+Line.prototype = {
+	active : false
+	, type : null
+	, relationshipTemplate : {	
 		"objectID" : "Model/Model/ModelRelationships/UUID",
 		"commandType" : "insert",
 		"value" : {		
 			"id" : "Model/Model/ModelRelationships/UUID",
 			"name" : "",
-			"type" : "Predicate",
+			"type" : "predicate",
 			"Role" : "has a",
 			"InverseRole" : "is a",
 			"ModelRelationshipConnectors" : { "empty" : "" }
 		}
 	}
-	
-	this.groupConnectorTemplate = {	
+	, groupConnectorTemplate : {	
 		"objectID" : "Model/Model/ModelObjects/UUID",
 		"commandType" : "update",
 		"value" : null
 	}
-	
-	this.connectorTemplate = {
+	, connectorTemplate : {
 		"id" : "Model/Model/ModelRelationships/parentUUID/ModelRelationshipConnectors/UUID",
 		"parentID" : "Model/Model/ModelRelationships/parentUUID",
 		"objectID" : "Model/Model/ModelObjects/UUID",
-		"modelRuleConditions" : { "empty" : "" },
+		"modelRuleConditions" : { "empty" : "" }
 	}
-	
-	this.relationshipIDRegEx = /Model\/Model\/ModelRelationships/;
+	, relationshipIDRegEx : /Model\/Model\/ModelRelationships/
+	, typeToIcon : {
+		"line" : "icons_line",
+		"unary" : "icons_unary",
+		"inheritance" : "icons_inheritance"
+	}	
 }
 
 Line.prototype.createLine = function( _modelID1, _modelID2 ){
-	var action = cloneJSON( this.lineTemplate );
+	var action = cloneJSON( this.relationshipTemplate );
 	var modelValue = action.value;
 
 	var model1 = getObjPointer( master.model, _modelID1 );
@@ -155,7 +166,7 @@ Line.prototype.createLine = function( _modelID1, _modelID2 ){
 }
 
 Line.prototype.createUnary = function( _id ){
-	var action = cloneJSON( this.lineTemplate );
+	var action = cloneJSON( this.relationshipTemplate );
 	var modelValue = action.value;
 
 	var model = getObjPointer( master.model, _id );
@@ -194,6 +205,71 @@ Line.prototype.createUnary = function( _id ){
 		throwError( 'line.js', 'createLine', err.message, false );
 		return;
 	}
+}
+
+Line.prototype.createInheritance = function( _modelIDA, _modelIDZ ){
+	var modelObjectA = getObjPointer( master.model, _modelIDA );
+	if( modelObjectA == undefined ){
+		throwError( 'line.js', 'createLine', 'The passed model ID, ' + _modelIDA + ', does not exist in the model' );
+	}
+	modelObjectA = cloneJSON( modelObjectA );
+	
+	var modelObjectZ = getObjPointer( master.model, _modelIDZ );
+	if( modelObjectZ == undefined ){
+		throwError( 'line.js', 'createLine', 'The passed model ID, ' + _modelIDZ + ', does not exist in the model' );
+	}
+	modelObjectZ = cloneJSON( modelObjectZ );
+	
+	var action = cloneJSON( this.relationshipTemplate );
+	var modelRelationship = action.value;
+	
+	var newRelationshipID = uuid.v4();
+	action.objectID = action.objectID.replace( 'UUID', newRelationshipID );
+	modelRelationship.id = action.objectID;
+	modelRelationship.type = "inheritance";
+	
+	var modelConnAID = uuid.v4();
+	var modelConnA = cloneJSON( this.connectorTemplate );
+	modelConnA.id = modelRelationship.id + '/ModelRelationshipConnectors/' + modelConnAID; 
+	modelConnA.parentID = modelRelationship.id;
+	modelConnA.objectID = modelObjectA.id;
+	modelConnA.inheritance = "child";
+	
+	modelRelationship.ModelRelationshipConnectors[ modelConnAID ] = modelConnA;
+	
+	var modelObjectAAction = cloneJSON( this.groupConnectorTemplate );
+	modelObjectAAction.objectID = modelObjectA.id;
+	modelObjectAAction.value = modelObjectA;
+	modelObjectAAction.value.ModelRelationshipConnectors[ getPointerUUID( modelConnA.id ) ] = modelConnA.id;
+	
+	var modelConnZID = uuid.v4();
+	var modelConnZ = cloneJSON( this.connectorTemplate );
+	modelConnZ.id = modelRelationship.id + '/ModelRelationshipConnectors/' + modelConnZID; 
+	modelConnZ.parentID = modelRelationship.id;
+	modelConnZ.objectID = modelObjectZ.id;
+	modelConnZ.inheritance = "parent";
+	
+	modelRelationship.ModelRelationshipConnectors[ modelConnZID ] = modelConnZ;
+	
+	var modelObjectZAction = cloneJSON( this.groupConnectorTemplate );
+	modelObjectZAction.objectID = modelObjectZ.id;
+	modelObjectZAction.value = modelObjectZ;
+	modelObjectZAction.value.ModelRelationshipConnectors[ getPointerUUID( modelConnZ.id ) ] = modelConnZ.id;
+	
+	var actions = [ action, modelObjectAAction, modelObjectZAction ];
+	
+	//try{
+		var trans = master.transaction.createTransaction( "Model", actions );
+		
+		var visualActions = master.canvas.line.createInheritance( modelRelationship );
+		
+		var trans = master.transaction.createTransaction( "VisualModel", visualActions, trans );
+		
+		master.transaction.processTransactions( trans );
+	/*}catch(err){
+		throwError( 'line.js', 'createLine', err.message, false );
+		return;
+	}*/
 }
 
 /*	saveEditPredicate: reads out the data stored in master.canvas.line
@@ -693,44 +769,35 @@ Line.prototype.ruleInsidePred = function( _aModelRule, _aModelPred ){
 	return true; 
 }
 
-Line.prototype.toggle = function( _unary ){
+Line.prototype.toggle = function( _type ){
 	if( this.active === true ){
-		this.close( _unary );
+		this.close( _type );
 	} else {
-		this.open( _unary );
+		this.open( _type );
 	}
 }
 
-Line.prototype.open = function( _unary ){
+Line.prototype.open = function( _type ){
 	if( this.active === false ){
 		this.active = true;
-		this.unary = _unary;
+		this.type = _type;
 		
-		if( _unary === true ){
-			$('#icons_unary').removeClass('icon')
-				.addClass('icon_selected');	
-		} else {
-			$('#icons_line').removeClass('icon')
-				.addClass('icon_selected');
-		}
 		
-		master.canvas.line.toggleCreateListener( _unary );
+		this.typeToIcon[ _type ].removeClass('icon')
+			.addClass('icon_selected');
+		
+		master.canvas.line.toggleCreateListener( _type );
 	}
 }
 
-Line.prototype.close = function( _unary ){
-	if( this.active === true && this.unary === _unary ){
+Line.prototype.close = function( _type ){
+	if( this.active === true && this.type === _type ){
 		this.active = false;
-		this.unary = false;
+		this.type = null;
 		
-		if( _unary === true ){
-			$('#icons_unary').removeClass('icon_selected')
-				.addClass('icon');
-		} else {
-			$('#icons_line').removeClass('icon_selected')
-				.addClass('icon');
-		}
+		this.typeToIcon[ _type ].removeClass('icon_selected')
+			.addClass('icon');
 		
-		master.canvas.line.toggleCreateListener( _unary );
+		master.canvas.line.toggleCreateListener( _type );
 	}
 }

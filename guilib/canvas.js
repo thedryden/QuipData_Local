@@ -86,7 +86,8 @@ function Canvas( _width, _height ){
   	this.callableFunctions = [];
   	this.callableFunctions['makeInteractive'] = makeInteractive;
   	this.callableFunctions['attachTo'] = attachTo;
-  	this.callableFunctions['makeCircleSelectable']= makeCircleSelectable;
+  	this.callableFunctions['makeCircleSelectable'] = makeCircleSelectable;
+  	this.callableFunctions['arrowAnchor'] = arrowAnchor;
 }
 
 /*	getMousePos: obtains the current position of the mouse over the
@@ -409,16 +410,20 @@ Canvas.prototype.processModelLinks = function( _id, _commandType ){
 			}
 		}
 		
-		var canvasLine = new Kinetic.Line({
-	  		points: points,
-	  		stroke: 'black',
-	  		strokeWidth: 1,
-	  		id: _id
-	  	});
+		var attr = cloneJSON( visualLine.attr );
+		attr.points = points;
+		
+		var canvasLine = new Kinetic.Line( attr );
 	  	this.lineLayer.add( canvasLine );
 
 		if( visualLine.aSideAnchor === '' ){
 			var aAnchor = undefined;
+		} else if ( typeof visualLine.aSideAnchor === 'string' ){
+			if( typeof this.callableFunctions[ visualLine.aSideAnchor ] === 'function' ){
+				var aAnchor = this.callableFunctions[ visualLine.aSideAnchor ];
+			} else {
+				var aAnchor = undefined;
+			}
 		} else {
 			var aAnchor = new Kinetic[ visualLine.aSideAnchor.className ]( visualLine.aSideAnchor.attr );
 			this.layer.add( aAnchor );
@@ -426,6 +431,12 @@ Canvas.prototype.processModelLinks = function( _id, _commandType ){
 		
 		if( visualLine.zSideAnchor === '' ){
 			var zAnchor = undefined;
+		} else if ( typeof visualLine.zSideAnchor === 'string' ){
+			if( typeof this.callableFunctions[ visualLine.zSideAnchor ] === 'function' ){
+				var zAnchor = this.callableFunctions[ visualLine.zSideAnchor ];
+			} else {
+				var zAnchor = undefined;
+			}
 		} else {
 			var zAnchor = new Kinetic[ visualLine.zSideAnchor.className ]( visualLine.zSideAnchor.attr );
 			this.layer.add( zAnchor );

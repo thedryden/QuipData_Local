@@ -115,8 +115,10 @@ Kinetic.Rect.prototype.getTrueX = function(){
 	var output = this.x() - ( this.offsetX() / 2 );
 	
 	var child = this;
-	while( child.getParent().getType() == 'Group' ){
+	var parent = child.getParent();
+	while( parent.getType() == 'Group' ){
 		child = child.getParent();
+		parent = child.getParent();
 		output += child.x(); 
 	}
 		

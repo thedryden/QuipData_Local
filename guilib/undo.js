@@ -30,8 +30,7 @@ Undo.prototype.addToUndo = function( _masterTransaction ){
 		}
 	
 		this.undoLog[ this.undoLog.length ] = _masterTransaction;
-		this.redoLog.length = 0;
-		console.log( "add: " + this.undoLog.length );	
+		this.redoLog.length = 0;	
 	}
 }
 
@@ -95,7 +94,6 @@ Undo.prototype.checkRemoteTransactionAgainstUndo = function( _masterTransaction,
 	
 	if( minUndoConflict > -1 )
 		this.undoLog.splice( minUndoConflict, this.undoLog.length );
-	console.log( "outside check: " + this.undoLog.length );
 }
 
 Undo.prototype.undo = function(){

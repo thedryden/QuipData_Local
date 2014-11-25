@@ -300,6 +300,10 @@ function moveLineSide( _line, _side, _az, _anchor ){
 		points = tempPoints;
 	
 	_line.points(points);
+	
+	if( typeof _anchor === 'function' )
+		_anchor( _line, _az );
+			
 	_line.getLayer().draw();
 }
 
@@ -318,7 +322,7 @@ function moveLineSideHelper( _sideSegment, _az, _points, _side, _anchor ){
 		displayPointY = _points.length-3
 	}
 	
-	if( _anchor == undefined ){
+	if( _anchor == undefined || typeof _anchor === 'function' ){
 		_points[displayPointX] = x;
 		_points[displayPointY] = y;
 	} else {
@@ -538,12 +542,14 @@ function addLink( _line, _aSide, _zSide, _aSideAnchor, _zSideAnchor ){
 		_line.points(points);
 		
 		insertSide( _line, 'a', _aSide );
-		if( _aSide.getClassName() === 'Rect' )
+		if( typeof _aSideAnchor === 'function' || _aSide.getClassName() === 'Rect' ){
 			insertAnchor( _line, 'a', _aSideAnchor );
+		}
 		
 		insertSide( _line, 'z', _zSide );
-		if( _zSide.getClassName() === 'Rect' )
+		if( typeof _zSideAnchor === 'function' || _zSide.getClassName() === 'Rect' ){
 			insertAnchor( _line, 'z', _zSideAnchor );
+		}
 		
 		//Create a generic function that will keep the line in sync based upon its properties
 		//and assign it as a property of the _line
@@ -674,7 +680,7 @@ function deleteLinkSide( _line, _az ){
 		
 		//Get sides parent, if group and it has a sides property
 		var parent = side.getParent();
-		if( parent.getClassName() === 'Group' && typeof parent.sides[ side.id() ] === 'object' ){
+		if( parent.getType() === 'Group' && typeof parent.sides[ side.id() ] === 'object' ){
 			//Delete this lines entry in sides
 			delete parent.sides[ side.id() ];
 			
@@ -731,8 +737,8 @@ function insertAnchor( _line, _az, _anchor ){
 		if( typeof _line.aSideAnchor !== 'undefined' ){
 			console.log( 'insertAnchor: the passed anchor already exists, no action taken.' );	
 		} else {
-			//'duck-type' to check if _anchor a Kinetic object
-			if( typeof _anchor === 'object' && typeof _anchor.getStage === 'function' ){
+			//'duck-type' to check if _anchor a Kinetic object or a function
+			if( typeof _anchor === 'function' || ( typeof _anchor === 'object' && typeof _anchor.getStage === 'function' ) ){
 				_line.aSideAnchor = _anchor;
 			}
 		}
@@ -743,7 +749,7 @@ function insertAnchor( _line, _az, _anchor ){
 			console.log( 'insertAnchor: the passed anchor already exists, no action taken.' );	
 		} else {
 			//'duck-type' to check if _anchor a Kinetic object
-			if( typeof _anchor === 'object' && typeof _anchor.getStage === 'function' ){
+			if( typeof _anchor === 'function' || ( typeof _anchor === 'object' && typeof _anchor.getStage === 'function' ) ){
 				_line.zSideAnchor = _anchor;
 			}
 		}
@@ -751,6 +757,57 @@ function insertAnchor( _line, _az, _anchor ){
 	
 	if( typeof _line.moveLine === 'function' )
 		_line.moveLine();
+}
+
+function arrowAnchor( _line, _az ){
+	var points = _line.points(); 
+	
+	if( _az = 'a' ){
+		var from = { x: points[ 2 ], y: points[ 3 ] }
+		var point = { x: points[ points.length - 4 ], y: points[ points.length - 3 ] };
+	} else {	 
+		var from = { x: points[ points.length - 2 ], y: points[ points.length - 1 ] };
+	  	var point = { x: points[ 2 ], y: points[ 3 ] };
+	}
+  	var angle = Math.atan2( point.y - from.y, point.x - from.x );
+  	var headLength = 15;
+  	
+  	var bottomLeft = { 
+  		x : point.x-headLength*Math.cos(angle-Math.PI/6),
+  		y : point.y-headLength*Math.sin(angle-Math.PI/6)
+  	}
+  	var bottomRight = {
+  		x : point.x - headLength * Math.cos( angle + Math.PI / 6 ),
+  		y : point.y - headLength * Math.sin( angle + Math.PI / 6 )
+  	}
+  	
+  	var aFunc = function(context) {
+		context.beginPath();
+		context.moveTo(point.x, point.y);
+		context.lineTo(bottomLeft.x, bottomLeft.y);
+		context.lineTo(bottomRight.x, bottomRight.y);
+		context.lineTo(point.x, point.y);
+		context.closePath();
+		// KineticJS specific context method
+		context.fillStrokeShape(this);
+	}
+	
+	var arrowHead = _line.getLayer().find( '#' + _az + _line.id() + 'arrowAnchor' );
+	
+	if( arrowHead.length > 0 ){
+		var arrowHead = arrowHead[0];
+		arrowHead.setAttr( 'sceneFunc', aFunc );
+	} else { 
+		var arrowHead = new Kinetic.Shape({
+			sceneFunc: aFunc,
+			fill: '#BF5FFF',
+			stroke: '#BF5FFF',
+			strokeWidth: 1,
+			id: _az + _line.id() + 'arrowAnchor'
+		});
+		
+		_line.getLayer().add( arrowHead );
+	}
 }
 
 function makeSizableUpdate(activeAnchor) {
@@ -984,14 +1041,12 @@ function makeInteractive( _group, _type ){
 	
 	if( nw && ne && se && sw )
 		return;
-	
-	/*		
+		
 	_group.getChildren().each(function( shape, n ){
 		if( shape.getClassName() === 'Rect' ){
 			shape.moveToBottom();
 		}
 	});
-	*/
 	
 	maxWidth = _group.getWidth();
 	maxHeight = _group.getHeight();
@@ -1012,22 +1067,20 @@ function makeInteractive( _group, _type ){
 	_group.on('click touchstart', function(e){
 		if( _group.getAttr( 'disabled' ) ) return;
 		
-		if( !_group.getAttr( 'selected' ) && !e.evt.shiftKey && !e.evt.ctrlKey ){
-			deselect();
-			select( _group );
-			selectStyle();
-		} else if ( _group.getAttr( 'selected' ) && ( e.evt.shiftKey || e.evt.ctrlKey ) ){
-			deselect( _group );
-			selectStyle();
-		} else if ( _group.getAttr( 'selected' ) !== true && ( e.evt.shiftKey || e.evt.ctrlKey ) ){
-			//If shif and cntrl were held during the click and object was not already selected
-			select( _group );
-			selectStyle();
-		} else if ( _group.getAttr( 'selected' ) && Kinetic.multiSelect == null ) {
-			if( typeof _type != 'undefined' && _type === 'objects' ){
-				master.canvas.ormObj.openEditName( _group.id() );
+		if( !_group.getAttr( 'selected' ) || Kinetic.multiSelect != null || !e.evt.shiftKey || !e.evt.ctrlKey ){
+			//If shif and cntrl were not held during the click
+			if( !e.evt.shiftKey && !e.evt.ctrlKey ){
+				deselect();
+				select( _group );
+			} else if ( _group.getAttr( 'selected' ) ) {
+			//If shif or cntrl were held during the click and object was already selected
 				deselect( _group );
+			} else {
+			//If shif and cntrl were held during the click and object was not already selected
+				select( _group );
 			}
+			
+			selectStyle();
 		}
 	});
 	
@@ -1071,13 +1124,14 @@ function makeInteractive( _group, _type ){
 		master.canvas.ormObj.visualOnlySync();
 	});
 	
-	if( typeof _type != 'undefined' && _type === 'objects' ){
+	if( typeof _type !== 'undefined' && _type === 'objects' ){
 		_group.on('dblclick dbltap', function(){
 			if( _group.getAttr( 'disabled' ) ) return;
 			
-			master.ormObj.openProperties( _group.id() );
+			master.canvas.ormObj.openEditName( _group.id() );
+			deselect( _group );
 		});
-	} else if ( typeof _type != 'undefined' && _type === 'predicate' ){
+	} else if ( typeof _type !== 'undefined' && _type === 'predicate' ){
 		_group.on('dblclick dbltap', function(){
 			if( _group.getAttr('disabled') ) return;
 			

@@ -101,7 +101,13 @@ CanvasLine.prototype = {
 		"zSide" : "UUID",
 		"aSideAnchor" : "",
 		"zSideAnchor" : "",
-		"otherPoints" : []
+		"otherPoints" : [],
+		"attr" : {
+	  		"points" : [0,0,0,0],
+	  		"stroke" : 'black',
+	  		"strokeWidth" : 1,
+	  		"id" : "UUID"
+	  	}
 	}
 	/*	todo: set id, set points
 	 * 	points: set position 0 to start of role and position 3 to end of role
@@ -171,6 +177,26 @@ CanvasLine.prototype = {
   		fill: 'white',
   		dash:[ 4, 1 ] 
   	}
+  	/*	todo: aSide, zSide. The anchors are optional.
+	 * 	aSide and zSide if set should be the ID
+	 * 	aSideAnchor and zSideAnchor if set should be the ID
+	 * 	of an object in a group in the visual object.
+	 */
+	, inheritanceTemplate : {
+		"id" : "UUID",
+		"modelID" : "UUID",
+		"aSide" : "UUID",
+		"zSide" : "UUID",
+		"aSideAnchor" : "",
+		"zSideAnchor" : "",
+		"otherPoints" : [],
+		"attr" : {
+	  		"points" : [0,0,0,0],
+	  		"stroke" : '#BF5FFF',
+  			"strokeWidth" : 4,
+	  		"id" : "UUID"
+	  	}
+	}
 	//When marking sides for line, this stores the first side selected
 	, aSideID : null
 	, aSideVisualID : null
@@ -357,6 +383,7 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 			linkAttr.id = "VisualModel/links/" + newLinkID;
 			linkAttr.aSide = visPredAction.value.id + "/objects/" + objID;
 			linkAttr.modelID = modelRelationship.id;
+			linkAttr.attr.id = linkAttr.id; 
 			
 			//Add a pointer to the link to the predicate for better graph search
 			visPredAction['value']['objects'][objID].links[ newLinkID ] = linkAttr.id;
@@ -1187,6 +1214,75 @@ CanvasLine.prototype.syncPredicate = function( _modelID, _newRules ){
 	return actions;
 }
 
+CanvasLine.prototype.createInheritance = function( _modelRelationship ){
+	var actions = [];
+	
+	var visualObjects = {
+		"child" : null,
+		"parent" : null
+	}
+	
+	for( var conRef in _modelRelationship.ModelRelationshipConnectors ){
+	if( conRef !== 'empty' ){
+		var aModelRelationshipConnector = _modelRelationship.ModelRelationshipConnectors[ conRef ];
+		
+		var visualGroup = master.canvas.ormObj.findGroupByModelID( aModelRelationshipConnector.objectID );
+		
+		var visualRect = null;
+		for( var rectRef in visualGroup.objects ){
+			visualRect = visualGroup.objects[ rectRef ];
+			
+			if( visualRect.className === 'Rect' ){
+				break;
+			}
+		}
+		if( visualRect.className !== 'Rect' ){
+			throwError( 'canvas.line.js', 'createInheritance', 'The passed visual group id, ' + visualGroup.id + ', contains no Rect.' );
+		}
+		
+		visualObjects[ aModelRelationshipConnector.inheritance ] = {
+			"visualGroup" : cloneJSON( visualGroup ),
+			"visualGroupUUID" : conRef,
+			"visualRect" : cloneJSON( visualRect ),
+			"visualRectUUID" : rectRef
+		}
+	}
+	}
+	
+	var linkUUID = uuid.v4();
+	var link = cloneJSON( this.inheritanceTemplate );
+	link.id = "VisualModel/links/" + linkUUID;
+	link.modelID = _modelRelationship.id;
+	link.aSide = visualObjects.child.visualRect.id;
+	link.zSide = visualObjects.parent.visualRect.id;
+	link.zSideAnchor = 'arrowAnchor';
+	link.attr.id = link.id;
+	
+	actions[ actions.length ] = {	
+		"objectID" : link.id,
+		"commandType" : "insert",
+		"value" : link
+	}
+	
+	visualObjects.child.visualGroup.objects[ visualObjects.child.visualRectUUID ].links[ linkUUID ] = link.id;
+	
+	actions[ actions.length ] = {	
+		"objectID" : visualObjects.child.visualGroup.id,
+		"commandType" : "update",
+		"value" : visualObjects.child.visualGroup
+	}
+	
+	visualObjects.parent.visualGroup.objects[ visualObjects.parent.visualRectUUID ].links[ linkUUID ] = link.id;
+	
+	actions[ actions.length ] = {	
+		"objectID" : visualObjects.parent.visualGroup.id,
+		"commandType" : "update",
+		"value" : visualObjects.parent.visualGroup
+	}
+	
+	return actions;
+}
+
 CanvasLine.prototype.updateLink = function( _modelLinkID, _modelZSideID ){
 	var visualLink = this.findLinkByModelID( _modelLinkID );
 	if( visualLink == undefined ){
@@ -1418,7 +1514,7 @@ CanvasLine.prototype.markSide = function( _id ){
 		
 	canvasShape = canvasShape[0];
 	
-	if( master.line.unary === true ){
+	if( master.line.type === 'unary' ){
 		//Get the visual object
 		var visualObj = getObjPointer( master.model, _id );
 		if( visualObj == 'undefined' )
@@ -1508,133 +1604,13 @@ CanvasLine.prototype.markSide = function( _id ){
 			this.restoreGroup( this.aSideVisualID );
 			
 			//create the line
-			master.line.createLine( this.aSideID, visualObj.modelID );
-		}
-
-		//Either way restore functions for mouse over to a side.
-		var aSideCanvasShape = master.canvas.stage.find( '#' + this.aSideVisualID );
-		
-		if( aSideCanvasShape.length > 0 ){
-			aSideCanvasShape = aSideCanvasShape[0]
-			
-			//make sure we are not creating duplicates event handlers
-			aSideCanvasShape.off( 'mouseover.lineObjSelect mouseout.lineObjSelect' );
-			
-			//Create event handler
-			aSideCanvasShape.on( 'mouseover.lineObjSelect', function(){
-				master.canvas.line.mouseOverSelect( this.id() );
-			});
-			
-			aSideCanvasShape.on( 'mouseout.lineObjSelect', function(){
-				master.canvas.line.restoreGroup( this.id() );
-			});	
-		}
-		
-		//reset aSide markers
-		this.aSideID = null;
-		this.aSideVisualID = null;
-	}
-}
-
-CanvasLine.prototype.markSide = function( _id ){
-	//Get the canvas object associated with _id
-	var canvasShape = master.canvas.stage.find( '#' + _id );
-	if( canvasShape.length === 0 )
-		throwError( 'canvas.line.js', 'markSide', 'Passed ID does not exist on the Canvas' );
-		
-	canvasShape = canvasShape[0];
-	
-	if( master.line.unary === true ){
-		//Get the visual object
-		var visualObj = getObjPointer( master.model, _id );
-		if( visualObj == 'undefined' )
-			throwError( 'canvas.line.js', 'markSide', 'Passed ID does not exist in the viusalModel' );
-			
-		//create the line
-		master.line.createUnary( visualObj.modelID );
-	//If an aSide is not defined, set the aSide
-	} else if( this.aSideID === null ){
-		//Get the visual object
-		var visualObj = getObjPointer( master.model, _id );
-		
-		if( visualObj == 'undefined' )
-			throwError( 'canvas.line.js', 'markSide', 'Passed ID does not exist in the viusalModel' );
-		
-		//Set aSide
-		this.aSideID = visualObj.modelID;
-		this.aSideVisualID = _id;
-			
-		/*	Change objects style to indicate that its selected, backup is not taken
-		 * 	because it mouseoverSelect will have already taken it
-		 */
-		canvasShape.stroke( '#A637A8' );
-		canvasShape.strokeWidth( 5 );
-		if( visualObj.type === 'predicate' )
-			canvasShape.moveToTop();
-		master.canvas.layer.draw();
-		
-		//remove other mouse overs so it stays selected.
-		canvasShape.off( 'mouseout.lineObjSelect mouseover.lineObjSelect' );
-		
-		//Create a guide line
-		//first get mouse position and use those to set the moving side of the line
-		var mouse = master.canvas.getMousePos();
-		
-		//final two points are idetentical this is so teh moveLineSide function can be used
-		var points = [ 0, 0, mouse.x, mouse.y, mouse.x, mouse.y ];
-		
-		//Define the line
-		var guideLine = new Kinetic.Line({
-	  		points: points,
-	  		stroke: 'black',
-	  		strokeWidth: 1,
-	  		id: 'canvas.line.guideLine.deleteMe'
-	  	});
-	  	master.canvas.lineLayer.add( guideLine );
-	  	
-	  	//Move side connected to an object so that it behaves just like a perminate line
-	  	moveLineSide( guideLine, canvasShape, 'a', undefined );
-	  	
-	  	master.canvas.lineLayer.draw();
-	  	
-	  	/*	As the mouse moves over the canvas object move the line so that the
-	  	 * 	is in sync with the mouse
-	  	 */
-	  	$('#ui').on('mousemove.lineObjSelect', function(){
-	  		var mouse = master.canvas.getMousePos();
-	  		var points = guideLine.points();
-	  		points[points.length-4] = mouse.x;
-	  		points[points.length-3] = mouse.y;
-	  		points[points.length-2] = mouse.x;
-	  		points[points.length-1] = mouse.y;
-	  		moveLineSide( guideLine, canvasShape, 'a', undefined );
-	  		master.canvas.lineLayer.draw();
-	  	});
-	  	
-	  	//Set a single function for when the mouse is realeased
-	  	$('html').on('mouseup.lineObjSelect', function(){
-	  		master.canvas.line.mouseUp();
-	  	});
-	//If an aSide is defined either create a line or deselect the aSide
-	} else {
-		//Get the visual object
-		var visualObj = getObjPointer( master.model, _id );
-		
-		if( visualObj == 'undefined' )
-			throwError( 'canvas.line.js', 'markSide', 'Passed ID does not exist in the viusalModel' );
-		
-		//If passed ID is identical to the aSide, the delsect the aSide, otherwise create the line
-		if( this.aSideID === visualObj.modelID ){
-			//Visually restore group, then run moseOverSelect
-			this.restoreGroup( _id );
-				
-			this.mouseOverSelect( _id );
-		} else {
-			//restore a and z side to original style
-			this.restoreGroup( this.aSideVisualID );
-			
-			//create the line
-			master.line.createLine( this.aSideID, visualObj.modelID );
+			if( master.line.type === 'line' ){
+				master.line.createLine( this.aSideID, visualObj.modelID );
+			} else {
+				console.log( 'aSide: ' + this.aSideID )
+				console.log( 'zSide: ' + visualObj.modelID )
+				master.line.createInheritance( this.aSideID, visualObj.modelID );
+			}
 		}
 
 		//Either way restore functions for mouse over to a side.
@@ -1700,7 +1676,7 @@ CanvasLine.prototype.openAGroup = function( _id ){
 	var canvasGroup = master.canvas.stage.find( '#' + _id );
 	var visualGroup = getObjPointer( master.model, _id ); 
 	
-	if( canvasGroup.length > 0 && ( master.line.unary !== true || visualGroup.type !== 'predicate' ) ){
+	if( canvasGroup.length > 0 && ( master.line.type === 'line' || visualGroup.type !== 'predicate' ) ){
 		canvasGroup = canvasGroup[0];
 		
 		//disable the group so that it cannot be moved, selected, or resized.
