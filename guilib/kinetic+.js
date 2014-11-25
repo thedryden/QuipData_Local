@@ -762,37 +762,68 @@ function insertAnchor( _line, _az, _anchor ){
 function arrowAnchor( _line, _az ){
 	var points = _line.points(); 
 	
-	if( _az = 'a' ){
-		var from = { x: points[ 2 ], y: points[ 3 ] }
-		var point = { x: points[ points.length - 4 ], y: points[ points.length - 3 ] };
+	if( _az === 'a' ){
+		var from = { x: points[ points.length - 4 ], y: points[ points.length - 3 ] };
+		var point = { x: points[ 2 ], y: points[ 3 ] }
 	} else {	 
-		var from = { x: points[ points.length - 2 ], y: points[ points.length - 1 ] };
-	  	var point = { x: points[ 2 ], y: points[ 3 ] };
+		var from = { x: points[ 2 ], y: points[ 3 ] };
+	  	var point = { x: points[ points.length - 4 ], y: points[ points.length - 3 ] };
 	}
-  	var angle = Math.atan2( point.y - from.y, point.x - from.x );
-  	var headLength = 15;
   	
-  	var bottomLeft = { 
-  		x : point.x-headLength*Math.cos(angle-Math.PI/6),
-  		y : point.y-headLength*Math.sin(angle-Math.PI/6)
+  	var headLength = 15;
+  	var lineWidth = 4;
+  	var inCutLength = ( 15 / 2 ) - ( 4 / 2 );
+  	var lineLength = findDistanceBetweenPoints( from, point );
+  	
+  	var lineAngle = Math.atan2( point.y - from.y, point.x - from.x );
+  	
+  	var bottomLeftOut = { 
+  		x : point.x - headLength * Math.cos( lineAngle - Math.PI / 6),
+  		y : point.y - headLength * Math.sin( lineAngle - Math.PI / 6)
   	}
-  	var bottomRight = {
-  		x : point.x - headLength * Math.cos( angle + Math.PI / 6 ),
-  		y : point.y - headLength * Math.sin( angle + Math.PI / 6 )
+  	
+  	var bottomRightOut = {
+  		x : point.x - headLength * Math.cos( lineAngle + Math.PI / 6 ),
+  		y : point.y - headLength * Math.sin( lineAngle + Math.PI / 6 )
   	}
+  	
+  	var arrowBaseAngle = Math.atan2(bottomRightOut.y - bottomLeftOut.y, bottomRightOut.x - bottomLeftOut.x);
+	
+	var bottomLeftIn = {
+		x: bottomLeftOut.x + ( Math.cos( arrowBaseAngle ) * inCutLength ),
+		y: bottomLeftOut.y + ( Math.sin( arrowBaseAngle ) * inCutLength )
+	}
+  	
+  	var bottomRightIn = {
+		x: bottomRightOut.x - ( Math.cos( arrowBaseAngle ) * inCutLength ),
+		y: bottomRightOut.y - ( Math.sin( arrowBaseAngle ) * inCutLength )
+	}
+  	
+	var baseLeft = {
+		x: from.x - ( Math.cos( arrowBaseAngle ) * ( lineWidth / 2 ) ),
+		y: from.y - ( Math.sin( arrowBaseAngle ) * ( lineWidth / 2 ) )
+	}
+  	
+	var baseRight = {
+		x: from.x + ( Math.cos( arrowBaseAngle ) * ( lineWidth / 2 ) ),
+		y: from.y + ( Math.sin( arrowBaseAngle ) * ( lineWidth / 2 ) )
+	}
   	
   	var aFunc = function(context) {
 		context.beginPath();
 		context.moveTo(point.x, point.y);
-		context.lineTo(bottomLeft.x, bottomLeft.y);
-		context.lineTo(bottomRight.x, bottomRight.y);
-		context.lineTo(point.x, point.y);
+		context.lineTo(bottomLeftOut.x, bottomLeftOut.y);
+		context.lineTo(bottomLeftIn.x, bottomLeftIn.y);
+		context.lineTo(baseLeft.x, baseLeft.y);
+		context.lineTo(baseRight.x, baseRight.y);
+		context.lineTo(bottomRightIn.x, bottomRightIn.y);
+		context.lineTo(bottomRightOut.x, bottomRightOut.y);
 		context.closePath();
 		// KineticJS specific context method
 		context.fillStrokeShape(this);
 	}
 	
-	var arrowHead = _line.getLayer().find( '#' + _az + _line.id() + 'arrowAnchor' );
+	var arrowHead = _line.getLayer().find( '#' + 'arrowAnchor' + _line.id() );
 	
 	if( arrowHead.length > 0 ){
 		var arrowHead = arrowHead[0];
@@ -801,9 +832,9 @@ function arrowAnchor( _line, _az ){
 		var arrowHead = new Kinetic.Shape({
 			sceneFunc: aFunc,
 			fill: '#BF5FFF',
-			stroke: '#BF5FFF',
+			stroke: 'black',
 			strokeWidth: 1,
-			id: _az + _line.id() + 'arrowAnchor'
+			id: 'arrowAnchor' + _line.id()
 		});
 		
 		_line.getLayer().add( arrowHead );
