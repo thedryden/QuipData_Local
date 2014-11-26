@@ -45,6 +45,7 @@ Rule.prototype = {
 		"parentID" : "Model/Model/ModelRules/parentUUID",
 		"ModelRelationshipConnectorID" : "Model/Model/ModelRelationships/parentUUID/ModelRelationshipConnectors/UUID"
 	}
+	, modelRuleID : null
 }
 
 Rule.prototype.createRule = function( _modelID1, _modelID2 ){
@@ -242,6 +243,52 @@ Rule.prototype.createRule = function( _modelID1, _modelID2 ){
 	}
 }
 
+Rule.prototype.updateRule = function( _type ){
+	var modelRule = getObjPointer( master.model, this.modelRuleID );
+	if( modelRule == undefined ){
+		throwError( 'rule.js', 'updateRule', 'The passed model ID, ' + _modelID + ', does not exist in the model' );
+	}
+	modelRule = cloneJSON( modelRule );
+	
+	if( modelRule.type === _type )
+		return;//Do Nothing
+	
+	modelRule.type = _type
+	
+	actions = [ {	
+		"objectID" : modelRule.id,
+		"commandType" : "update",
+		"value" : modelRule
+	} ];
+	
+	try{
+		var trans = master.transaction.createTransaction( "Model", actions );
+		
+		var visualActions = master.canvas.rule.updateRule( modelRule );
+		
+		var trans = master.transaction.createTransaction( "VisualModel", visualActions, trans );
+		
+		master.transaction.processTransactions( trans );
+	}catch(err){
+		throwError( 'rule.js', 'updateRule', err.message, false );
+		return;
+	}
+}
+
+Rule.prototype.openChangeSymbol = function( _id ){
+	var visualRule = getObjPointer( master.model, _id );
+	if( visualRule == undefined ){
+		throwError( 'rule.js', 'updateRule', 'The passed visual ID, ' + _id + ', does not exist in the model' );
+	}
+
+	this.modelRuleID = visualRule.modelID;
+	$('#wander_rule_select').show();
+}
+
+Rule.prototype.closeChangeSymbol = function( _id ){
+	this.modelRuleID = null;
+	$('#wander_rule_select').hide();
+} 
 
 /*	deleteRule: takes an _id to a rule and  creates the nessisary action to 
  * 	delete it and any connections to it in model relationships. You may

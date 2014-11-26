@@ -1427,6 +1427,91 @@ CanvasLine.prototype.moveLink = function( _id ){
 		canvasLine.moveLine();
 }
 
+CanvasLine.prototype.deleteLink = function( _id, _integrateWith ){
+	var visualLine = getObjPointer( master.model, _id );
+	if( visualLine == undefined ){
+		throwError( 'canvas.line.js', 'deleteLink', 'Pased ID, ' + _id + 'does not exists in the model.' );
+		return;
+	}
+	
+	if( typeof _integrateWith !== 'object' ){
+		_integrateWith = {};
+	}
+	
+	var actions = [ {	
+			"objectID" : visualLine.id,
+			"commandType" : "delete",
+			"value" : null
+		} ];
+	
+	if( visualLine.aSide !== '' ){
+		var visualObjectA = getObjPointer( master.model, visualLine.aSide );
+		if( visualObjectA == undefined ){
+			throwError( 'canvas.line.js', 'deleteLink', 'A side id, ' + visualLine.aSide + 'does not exists in the model.' );
+			return;
+		}
+		
+		if( typeof _integrateWith[ visualObjectA.parentID ] === 'undefined' ){
+			var visualGroupA = getObjPointer( master.model, visualObjectA.parentID );
+			if( visualGroupA == undefined ){
+				throwError( 'canvas.line.js', 'deleteLink', 'A parent id, ' + visualObjectA.parentID + 'does not exists in the model.' );
+				return;
+			}
+			visualGroupA = cloneJSON( visualGroupA );
+			
+			_integrateWith[ visualGroupA.id ] = visualGroupA;
+		} else {
+			visualGroupA = _integrateWith[ visualGroupA.parentID ];
+		}
+		
+		delete visualGroupA.objects[ getPointerUUID( visualObjectA.id ) ].links[ getPointerUUID( visualLine.id ) ];
+		
+		actions[ actions.length ] = {	
+			"objectID" : visualGroupA.id,
+			"commandType" : "update",
+			"value" : visualGroupA
+		}
+	}
+	
+	if( visualLine.zSide !== '' ){
+		var visualObjectZ = getObjPointer( master.model, visualLine.zSide );
+		if( visualObjectZ == undefined ){
+			throwError( 'canvas.line.js', 'deleteLink', 'A side id, ' + visualLine.zSide + 'does not exists in the model.' );
+			return;
+		}
+		
+		if( typeof _integrateWith[ visualObjectZ.parentID ] === 'undefined' ){
+			var visualGroupZ = getObjPointer( master.model, visualObjectZ.parentID );
+			if( visualGroupZ == undefined ){
+				throwError( 'canvas.line.js', 'deleteLink', 'A parent id, ' + visualObjectZ.parentID + 'does not exists in the model.' );
+				return;
+			}
+			visualGroupZ = cloneJSON( visualGroupZ );
+			
+			_integrateWith[ visualGroupZ.id ] = visualGroupZ;
+		} else {
+			visualGroupZ = _integrateWith[ visualGroupZ.parentID ];
+		}
+			
+		delete visualGroupZ.objects[ getPointerUUID( visualObjectZ.id ) ].links[ getPointerUUID( visualLine.id ) ];
+		
+		for( var i = 0; i < actions.length; i++ ){
+			if( actions[i].objectID === visualObjectZ.id ){
+				actions.splice( i, 1 );
+				break;
+			}	
+		}
+		
+		actions[ actions.length ] = {	
+			"objectID" : visualGroupZ.id,
+			"commandType" : "update",
+			"value" : visualGroupZ
+		}
+	}
+	
+	return actions;
+}
+
 /*	findPredicateByModelID:	finds the visual model predicate from the
  * 	modelID
  * 
@@ -1607,8 +1692,6 @@ CanvasLine.prototype.markSide = function( _id ){
 			if( master.line.type === 'line' ){
 				master.line.createLine( this.aSideID, visualObj.modelID );
 			} else {
-				console.log( 'aSide: ' + this.aSideID )
-				console.log( 'zSide: ' + visualObj.modelID )
 				master.line.createInheritance( this.aSideID, visualObj.modelID );
 			}
 		}

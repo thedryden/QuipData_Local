@@ -164,6 +164,7 @@ ORMOBJ.prototype.deleteObj = function( _ids ){
 		}
 		
 		var aVisualGroup = master.canvas.ormObj.findGroupByModelID( _ids[ i ] );
+		var aVisualLink = master.canvas.line.findLinkByModelID( _ids[ i ] );
 		if( aVisualGroup != undefined ){
 			tempActions = master.canvas.ormObj.deleteObj( aVisualGroup.id, integrated );
 			
@@ -186,8 +187,31 @@ ORMOBJ.prototype.deleteObj = function( _ids ){
 				if( insert === true )
 					visualActions[ visualActions.length ] = tempActions[j];
 			}
+		} else if( aVisualLink != undefined ){
+			tempActions = master.canvas.line.deleteLink( aVisualLink.id, integrated );
+			
+			for( var j = 0; j < tempActions.length; j++ ){
+				var insert = true;
+				 
+				for( var k = 0; k < visualActions.length; k++ ){
+					if( tempActions[j].objectID === visualActions[k].objectID ){
+						if( visualActions[k].commandType === 'delete' ){
+							tempActions.splice( j, 1 );
+							insert = false;
+							break;
+						} else {
+							visualActions.splice( k, 1 );
+							break;
+						}
+					}
+				}
+				
+				if( insert === true )
+					visualActions[ visualActions.length ] = tempActions[j];
+			}
 		}
 	}
+	
 	
 	try{
 		var trans = master.transaction.createTransaction( "Model", modelActions );

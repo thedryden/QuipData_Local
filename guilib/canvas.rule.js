@@ -209,6 +209,7 @@ CanvasRule.prototype.createRule = function( _modelRule ){
 		var aLineUUID = uuid.v4();
 		var aLine = cloneJSON( master.canvas.line.lineTemplate )
 		aLine.id = 'VisualModel/links/' + aLineUUID;
+		aLine.attr.id = aLine.id;
 		aLine.modelID = aModelRelationshipCon.id;
 		aLine.aSide = aVisualRole.id;
 		aLine.zSide = visualCircle.id;
@@ -398,6 +399,39 @@ CanvasRule.prototype.insertModelRuleConndition = function( _modelRuleCondition )
 	
 	return actions;
 }
+
+CanvasRule.prototype.updateRule = function( _modelRule ){
+	var visualRule = this.findRuleByModelID( _modelRule.id );
+	if( visualRule.length === 0 ){
+		throwError( 'canvas.rule.js', 'updateRule', 'Passed ID does not in the viusal model' );
+	}
+	visualRule = cloneJSON( visualRule );
+	
+	for( var ref in visualRule.objects ){
+	if( ref !== 'empty' ){
+		if( visualRule.objects[ ref ].type !== 'ruleCircle' )
+			delete visualRule.objects[ ref ];
+	} 
+	}
+	
+	for( var ref in this.ruleSymbols[ _modelRule.type ] ){
+		aSymbol = cloneJSON( this.ruleSymbols[ _modelRule.type ][ ref ] );
+		
+		aSymbolUUID = uuid.v4();
+		
+		aSymbol.id = visualRule.id + '/objects/' + aSymbolUUID;
+		aSymbol.modelID = _modelRule.id;
+		aSymbol.parentID = visualRule.id;
+		aSymbol.attr.id = aSymbol.id;
+		visualRule.objects[ aSymbolUUID ] = aSymbol;
+	}
+	
+	return [ {	
+		"objectID" : visualRule.id,
+		"commandType" : "update",
+		"value" : visualRule
+	} ];
+} 
 
 CanvasRule.prototype.markSide = function( _id ){
 	//Get the canvas object associated with _id

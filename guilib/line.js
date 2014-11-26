@@ -609,7 +609,7 @@ Line.prototype.saveEditPredicate = function( _closeOnFinish ){
 		}
 	}
 		
-	//try{
+	try{
 		var trans = master.transaction.createTransaction( "Model", actions );
 		
 		var visualActions = master.canvas.line.syncPredicate( fullPred, modelRules );
@@ -623,10 +623,10 @@ Line.prototype.saveEditPredicate = function( _closeOnFinish ){
 		} else {
 			master.canvas.line.editPredicate( master.canvas.line.activePredID );
 		}
-	/*}catch(err){
+	}catch(err){
 		throwError( 'line.js', 'createLine', err.message, false );
 		return;
-	}*/
+	}
 }
 
 Line.prototype.uniqueRuleAndUniqueEqual = function( _aRule, _aUnique, _data ){

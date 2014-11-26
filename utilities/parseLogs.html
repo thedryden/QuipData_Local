@@ -1,0 +1,155 @@
+<html>
+<head>
+	<title>QuipData: ORM Log Parser</title>
+	<!--Foreign Libraries-->
+	<script src='https://cdn.firebase.com/js/client/1.0.11/firebase.js'></script>
+	<script src='../vendor/jquery-2.1.1.min.js'></script>
+	<script src='../guilib/functions.js'></script>
+	
+	<script>
+		var model = {};
+	
+		var firebaseUUID = GetURLParameter('firebaseUUID');
+		firebaseUUID = ( firebaseUUID == undefined || firebaseUUID === 'undefined' ) ? '086c81c0-8a0f-4cb9-88a0-66c764cf4fda' : firebaseUUID;
+		console.log( "firebaseUUID: " + firebaseUUID );
+	
+		var fbModel = new Firebase( 'https://vivid-fire-1112.firebaseio.com/files/' + firebaseUUID );
+	
+		fbModel.once('value', function(data) {
+			model = data.val();
+			parse();
+		}, function(err){
+			alert('unable to open the firebase path');
+		});
+		
+		function parse(){
+			var fullLog = [];
+		
+			for ( var mLogRef in model.TransactionLog ){
+			if( mLogRef !== 'empty' ){ 
+				var mLog = model.TransactionLog[ mLogRef ];
+			
+				var obj = {
+					"userid" : null,
+					"timestamp" : null,
+					"ModelTransaction" : null,
+					"modelActions" : 0,
+					"VisualModelTransaction" : null,
+					"visualActions" : 0
+				}
+				
+				if( mLog.ModelTransaction != undefined ){
+					obj.ModelTransaction = mLog.ModelTransaction;
+					
+					var modelLog = getObjPointer( model, mLog.ModelTransaction );
+					obj.timestamp = Date.parse( modelLog.modifiedOn );
+					obj.userid = modelLog.modifiedBy;
+					obj.modelActions = getPropertyCount( modelLog.Actions, true );
+				}
+				
+				if( mLog.VisualModelTransaction != undefined ){
+					obj.VisualModelTransaction = mLog.VisualModelTransaction;
+					
+					var visualLog = getObjPointer( model, mLog.VisualModelTransaction );
+					obj.timestamp = Date.parse( visualLog.modifiedOn );
+					obj.userid = visualLog.modifiedBy;
+					obj.visualActions = getPropertyCount( visualLog.Actions, true );
+				}
+				
+				fullLog[ fullLog.length ] = obj;
+			}
+			}
+			
+			var metrics = {
+				totalMinutes : ( fullLog[ fullLog.length - 1 ].timestamp - fullLog[0].timestamp ) / 1000 / 60,
+				avgMinutesBetweenChanges : 0,
+				avgSecondsBetweenChanges : 0,
+				stDevMinutesBetweenChanges : 0,
+				totalChanges : fullLog.length,
+				totalChangesWithModelObjChanges : 0,
+				totalModelObjChanges : 0,
+				avgModelObjChangedPerChange : 0,
+				stDevModelObjChangedPerChange : 0,
+				totalChangesWithVisualObjChanges : 0,
+				totalVisualObjChanges : 0,
+				avgVisualObjChangedPerChange : 0,
+				stDevVisualObjChangedPerChange : 0
+			}
+			
+			if( fullLog.length > 0 ){
+				metrics.avgMinutesBetweenChanges = metrics.totalMinutes / metrics.totalChanges
+				metrics.avgSecondsBetweenChanges = metrics.avgMinutesBetweenChanges * 60;
+				
+				var durationMinutes = [];
+				var modelChangesPerChange = [];
+				var visualChangesPerChange = [];
+				
+				for( var i = 0; i < fullLog.length; i++ ){
+					if( i > 0 ){
+						durationMinutes[ durationMinutes.length ] = ( fullLog[i].timestamp - fullLog[i - 1].timestamp ) / 1000 / 60;
+					}
+					
+					modelChangesPerChange[ modelChangesPerChange.length ] = fullLog[i].modelActions;
+					visualChangesPerChange[ visualChangesPerChange.length ] = fullLog[i].visualActions;
+				
+					if( fullLog[i].modelActions > 0 ){
+						metrics.totalChangesWithModelObjChanges++;
+						metrics.totalModelObjChanges += fullLog[i].modelActions;
+					}
+					
+					
+					if( fullLog[i].visualActions > 0 ){
+						metrics.totalChangesWithVisualObjChanges++;
+						metrics.totalVisualObjChanges += fullLog[i].visualActions;
+					}
+				}
+				
+				metrics.avgModelObjChangedPerChange = metrics.totalModelObjChanges / metrics.totalChanges;
+				metrics.avgVisualObjChangedPerChange = metrics.totalVisualObjChanges / metrics.totalChanges;
+			}
+			
+			metrics.stDevMinutesBetweenChanges = ArrayMath.stDev( durationMinutes );
+			metrics.stDevModelObjChangedPerChange = ArrayMath.stDev( modelChangesPerChange );
+			metrics.stDevVisualObjChangedPerChange = ArrayMath.stDev( visualChangesPerChange );
+			
+			for( var ref in metrics ){
+				$('#summary').append( ref + ': ' + metrics[ ref ] + '<br />' );
+			}
+			
+			$('#arrays').append( "durationMinutes: " + JSON.stringify( durationMinutes ) + "<br />" );
+			$('#arrays').append( "modelChangesPerChange: " + JSON.stringify( modelChangesPerChange ) + "<br />" );
+			$('#arrays').append( "visualChangesPerChange: " + JSON.stringify( visualChangesPerChange ) + "<br />" );
+			
+			var rows = "";
+			for( var i = 0; i < fullLog.length; i++ ){
+				rows += '<tr>';
+				rows += '<td>' + fullLog[i].userid + '</td>';
+				rows += '<td>' + fullLog[i].timestamp + '</td>';
+				rows += '<td>' + fullLog[i].ModelTransaction + '</td>';
+				rows += '<td>' + fullLog[i].modelActions + '</td>';
+				rows += '<td>' + fullLog[i].VisualModelTransaction + '</td>';
+				rows += '<td>' + fullLog[i].visualActions + '</td>';
+				rows += '</tr>'
+			} 
+		
+			$('#tbl_output').append( JSON.stringify( rows ) );
+			$('#output').append( JSON.stringify( fullLog ) );
+		}
+	</script>
+</head>
+<body>
+<div name="summary" id="summary"></div>
+<div name="arrays" id="arrays"></div>
+<table name="tbl_output" id="tbl_output">
+<tr>
+<th>userid</th>
+<th>timestamp</th>
+<th>ModelTransaction</th>
+<th>modelActions</th>
+<th>VisualModelTransaction</th>
+<th>visualActions</th>
+</tr>
+</table>
+<div name="output" id="output"></div>
+</body>
+</html>

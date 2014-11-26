@@ -554,13 +554,17 @@ function addLink( _line, _aSide, _zSide, _aSideAnchor, _zSideAnchor ){
 		//Create a generic function that will keep the line in sync based upon its properties
 		//and assign it as a property of the _line
 		var funMoveLine = function(){
-			if( this.aSide.getClassName() === 'Rect' ){
+			if( this.aSide == undefined ){
+				//Do Nothing
+			} else if( this.aSide.getClassName() === 'Rect' ){
 				moveLineSide( this, this.aSide, 'a', this.aSideAnchor );
 			} else {
 				moveLineSideSimple( this, this.aSide, 'a' );
 			}
 			
-			if( this.zSide.getClassName() === 'Rect' ){
+			if( this.zSide == undefined ){
+				//Do nothing
+			} else if( this.zSide.getClassName() === 'Rect' ){
 				moveLineSide( this, this.zSide, 'z', this.zSideAnchor );
 			} else {
 				moveLineSideSimple( this, this.zSide, 'z' );
@@ -657,10 +661,10 @@ function deleteLinkSide( _line, _az ){
 	if( _line == undefined || _line.id() == undefined ){
 		console.log( 'deleteLinkSide: line was either not defined or did not have an id attribute, no action taken' ); 
 		return;
-	} else 	if( _az === 'a' && typeof _line.aSide.lines[ _line.id() ] === 'object' ){
+	} else 	if( _az === 'a' && _line.aSide != undefined && typeof _line.aSide.lines[ _line.id() ] === 'object' ){
 		var side = _line.aSide;
 		_line.aSide = undefined;
-	} else if( _az === 'z' && typeof _line.zSide.lines[ _line.id() ] === 'object' ){
+	} else if( _az === 'z' && _line.zSide != undefined && typeof _line.zSide.lines[ _line.id() ] === 'object' ){
 		var side = _line.zSide;
 		_line.zSide = undefined;
 	} else {
@@ -680,7 +684,7 @@ function deleteLinkSide( _line, _az ){
 		
 		//Get sides parent, if group and it has a sides property
 		var parent = side.getParent();
-		if( parent.getType() === 'Group' && typeof parent.sides[ side.id() ] === 'object' ){
+		if( parent != undefined && parent.getType() === 'Group' && typeof parent.sides[ side.id() ] === 'object' ){
 			//Delete this lines entry in sides
 			delete parent.sides[ side.id() ];
 			
@@ -808,6 +812,34 @@ function arrowAnchor( _line, _az ){
 		x: from.x + ( Math.cos( arrowBaseAngle ) * ( lineWidth / 2 ) ),
 		y: from.y + ( Math.sin( arrowBaseAngle ) * ( lineWidth / 2 ) )
 	}
+	
+	var minX = point.x;
+	var minY = point.y;
+	
+	if( minX > from.x ) mixX = from.x;
+	if( minY > from.y ) mixY = from.y;
+	if( minX > bottomLeftOut.x ) mixX = bottomLeftOut.x;
+	if( minY > bottomLeftOut.y ) mixY = bottomLeftOut.y;
+	if( minX > bottomRightOut.x ) mixX = bottomRightOut.x;
+	if( minY > bottomRightOut.y ) mixY = bottomRightOut.y;
+	if( minX > bottomLeftIn.x ) mixX = bottomLeftIn.x;
+	if( minY > bottomLeftIn.y ) mixY = bottomLeftIn.y;
+	if( minX > bottomRightIn.x ) mixX = bottomRightIn.x;
+	if( minY > bottomRightIn.y ) mixY = bottomRightIn.y;
+	if( minX > baseLeft.x ) mixX = baseLeft.x;
+	if( minY > baseLeft.y ) mixY = baseLeft.y;
+	if( minX > baseRight.x ) mixX = baseRight.x;
+	if( minY > baseRight.y ) mixY = baseRight.y;
+	
+	point.x -= minX; point.y -= minY;
+	from.x -= minX; from.y -= minY;
+	bottomLeftOut.x -= minX; bottomLeftOut.y -= minY;
+	bottomRightOut.x -= minX; bottomRightOut.y -= minY;
+	bottomLeftIn.x -= minX; bottomLeftIn.y -= minY;
+	bottomRightIn.x -= minX; bottomRightIn.y -= minY;
+	baseLeft.x -= minX; baseLeft.y -= minY;
+	baseRight.x -= minX; baseRight.y -= minY;
+
   	
   	var aFunc = function(context) {
 		context.beginPath();
@@ -826,9 +858,23 @@ function arrowAnchor( _line, _az ){
 	var arrowHead = _line.getLayer().find( '#' + 'arrowAnchor' + _line.id() );
 	
 	if( arrowHead.length > 0 ){
+		var arrowHeadGroup = _line.getLayer().find( '#' + _line.id() )[0];
+		arrowHeadGroup.x( minX );
+		arrowHeadGroup.y( minY );
+	
 		var arrowHead = arrowHead[0];
 		arrowHead.setAttr( 'sceneFunc', aFunc );
+		
+		var arrowHeadOutter = arrowHeadGroup.find('.outter')[0];
+		arrowHeadOutter.setAttr( 'sceneFunc', aFunc );
 	} else { 
+		var arrowHeadGroup = new Kinetic.Group({
+			x: minX,
+			y: minX,
+			draggable: false,
+			id: _line.id()
+		})
+	
 		var arrowHead = new Kinetic.Shape({
 			sceneFunc: aFunc,
 			fill: '#BF5FFF',
@@ -837,7 +883,43 @@ function arrowAnchor( _line, _az ){
 			id: 'arrowAnchor' + _line.id()
 		});
 		
-		_line.getLayer().add( arrowHead );
+		var arrowHeadOutter = new Kinetic.Shape({
+			sceneFunc: aFunc,
+			stroke: SELECTED_HEX,
+			strokeWidth: 2,
+			name: 'outter'
+		});
+		
+		arrowHeadGroup.aSide = _line.aSide;
+		arrowHeadGroup.zSide = _line.zSide;
+		arrowHeadGroup.line = _line;
+		
+		arrowHeadGroup.add( arrowHead );
+		arrowHeadGroup.add( arrowHeadOutter );
+		arrowHeadOutter.hide();
+		_line.getLayer().add( arrowHeadGroup );
+		_line.moveLine();
+		
+		arrowHeadGroup.on('click touchstart', function(e){
+			if( arrowHeadGroup.getAttr( 'disabled' ) ) return;
+			
+			if( !arrowHeadGroup.getAttr( 'selected' ) || Kinetic.multiSelect != null || !e.evt.shiftKey || !e.evt.ctrlKey ){
+				//If shif and cntrl were not held during the click
+				if( !e.evt.shiftKey && !e.evt.ctrlKey ){
+					deselect();
+					select( arrowHeadGroup );
+				} else if ( _group.getAttr( 'selected' ) ) {
+				//If shif or cntrl were held during the click and object was already selected
+					deselect( arrowHeadGroup );
+				} else {
+				//If shif and cntrl were held during the click and object was not already selected
+					select( arrowHeadGroup );
+				}
+				
+				selectStyle();
+				document.body.style.cursor = 'default';
+			}
+		});
 	}
 }
 
@@ -1168,6 +1250,12 @@ function makeInteractive( _group, _type ){
 			
 			master.canvas.line.editPredicate( _group.id() );
 		});
+	} else if ( typeof _type !== 'undefined' && _type === 'rule' ){
+		_group.on('dblclick dbltap', function(){
+			if( _group.getAttr('disabled') ) return;
+			
+			master.rule.openChangeSymbol( _group.id() );
+		});
 	}
 }
 
@@ -1286,6 +1374,12 @@ function makeCircleSelectable( _group, _type ){
 			if( _group.getAttr('disabled') ) return;
 			
 			master.canvas.line.editPredicate( _group.id() );
+		});
+	} else if ( typeof _type !== 'undefined' && _type === 'rule' ){
+		_group.on('dblclick dbltap', function(){
+			if( _group.getAttr('disabled') ) return;
+			
+			master.rule.openChangeSymbol( _group.id() );
 		});
 	}
 }

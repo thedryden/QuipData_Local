@@ -331,6 +331,8 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 				var visualModelChild = getObjPointer( master.model, child.getId() );
 				//If the child exists on the visualModel set its attributes, otherwise destory it
 				if( visualModelChild == undefined ){
+					if( typeof child.destroyChildren === 'function' )
+						child.destroyChildren();
 					child.destroy();
 				} else {
 					child.setAttrs( visualModelChild.attr );
@@ -389,6 +391,8 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 		if( canvasGroup.length > 0 ){
 			canvasGroup = canvasGroup[0];
 			
+			if( typeof canvasGroup.destroyChildren === 'function' )
+				canvasGroup.destroyChildren();
 			canvasGroup.destroy();
 			
 			//Since "outside" object live outside of the group they will need to be cleaned
@@ -396,6 +400,8 @@ Canvas.prototype.processModelGroup = function( _id, _commandType ){
 			//there parent visual group's name
 			canvasObjects = this.stage.find( '.' + _id );
 			canvasObjects.each(function( shape, n ){
+				if( typeof shape.destroyChildren === 'function' )
+					shape.destroyChildren();
 				shape.destroy();
 			})
 		}
@@ -528,14 +534,14 @@ Canvas.prototype.processModelLinks = function( _id, _commandType ){
 				var aAnchor = undefined;
 			} else {
 				var aAnchor = new Kinetic[ visualLine.aSideAnchor.className ]( visualLine.aSideAnchor.attr );
-				this.layer.add( aAnchor );
+				this.lineLayer.add( aAnchor );
 			}
 			
 			if( visualLine.zSideAnchor === '' ){
 				var zAnchor = undefined;
 			} else {
 				var zAnchor = new Kinetic[ visualLine.zSideAnchor.className ]( visualLine.zSideAnchor.attr );
-				this.layer.add( zAnchor );
+				this.lineLayer.add( zAnchor );
 			}
 			
 			this.addLink( 0, canvasLine, visualLine.aSide, visualLine.zSide, aAnchor, zAnchor );
@@ -564,7 +570,7 @@ Canvas.prototype.processModelLinks = function( _id, _commandType ){
 				var aAnchor = new Kinetic[ visualLine.aSideAnchor.className ]( visualLine.aSideAnchor.attr );
 				this.layer.add( aAnchor );
 				insertAnchor( canvasLine, 'a', aAnchor );
-				this.layer.draw();
+				this.lineLayer.draw();
 			}
 			
 			if( visualLine.zSideAnchor === '' && canvasLine.zSideAnchor != undefined ){
@@ -573,15 +579,15 @@ Canvas.prototype.processModelLinks = function( _id, _commandType ){
 				var zAnchor = new Kinetic[ visualLine.zSideAnchor.className ]( visualLine.zSideAnchor.attr );
 				this.layer.add( zAnchor );
 				insertAnchor( canvasLine, 'z', zAnchor );
-				this.layer.draw();
+				this.lineLayer.draw();
 			}
 			
 			if( visualLine.aSide === '' || visualLine.zSide ==='' ){
 				canvasLine.hide();
-				this.layer.draw();
+				this.lineLayer.draw();
 			} else {
 				canvasLine.show();
-				this.layer.draw();
+				this.lineLayer.draw();
 			}
 		}
 	}
@@ -599,8 +605,16 @@ Canvas.prototype.processModelLinks = function( _id, _commandType ){
 			canvasLine = canvasLine[0];
 			
 			deleteLink( canvasLine );
+			if( canvasLine.line != undefined ){
+				if( typeof canvasLine.line.destroyChildren === 'function' )
+					canvasLine.line.destroyChildren();
+				canvasLine.line.destroy();
+			}	
+				
+			if( typeof canvasLine.destroyChildren === 'function' )
+				canvasLine.destroyChildren();
 			canvasLine.destroy();
-			this.layer.draw();
+			this.lineLayer.draw();
 		}
 	}
 }

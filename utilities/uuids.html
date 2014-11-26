@@ -1,0 +1,19 @@
+<html>
+<head>
+	<title>100 UUIDs</title>
+	<!--Foreign Libraries-->
+	<script src='../vendor/uuid.js'></script>
+	<script src='../vendor/jquery-2.1.1.min.js'></script>
+	
+	<script>
+		$( document ).ready(function(){
+			for( var i = 0; i < 100; i++ ){
+				$('#uuids').append( uuid.v4() + '<br />' );
+			} 
+		});
+	</script>
+</head>
+<body>
+	<div name="uuids" id="uuids"></div>
+</body>
+</html>

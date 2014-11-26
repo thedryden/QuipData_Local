@@ -221,7 +221,7 @@
 		<div name="wander_obj_prop_bar" id="wander_obj_prop_bar" class="wandering_bar">
 			<div class="sprite sprite_hover cross" onclick="master.ormObj.closeProperties();"></div>
 		</div>
-		<div name="wander_line_prop_content" id="wander_line_prop_content">
+		<div name="wander_obj_prop_content" id="wander_obj_prop_content">
 			<p>
 				<label for="obj_name">Name:</label>
 				<input name="obj_name" id="obj_name" type="text" value="" />
@@ -279,6 +279,21 @@
 			<button onclick="master.line.saveEditPredicate();">Apply</button>
 			<button onclick="master.line.saveEditPredicate( true );">OK</button>
 		</span>
+	</div>
+	
+	<!--External Line Properties-->
+	<div name="wander_rule_select" id="wander_rule_select" class="wander_div" style="display: none;">
+		<div name="wander_rule_select_bar" id="wander_rule_select_bar" class="wandering_bar">
+			<div class="sprite sprite_hover cross" onclick="master.ormObj.closeProperties();"></div>
+		</div>
+		<div name="wander_rule_select_content" id="wander_rule_select_content">
+			<p>
+				To change the rule symbol, select a symbol from the list below:
+			</p>
+			<span name='select_required' id='select_required' class="icon" style="font-size: .9em;" onclick="master.rule.updateRule( 'required' );master.rule.closeChangeSymbol();"><div class="sprite required"></div>Required</span>
+			<span name='select_unique' id='select_unique' class="icon" onclick="master.rule.updateRule( 'unique' );master.rule.closeChangeSymbol();"><div class="sprite unique"></div>Unique</span>
+			<span name='select_primary' id='select_primary' class="icon" onclick="master.rule.updateRule( 'primary unique' );master.rule.closeChangeSymbol();"><div class="sprite primary"></div>Primary</span>
+		</div>
 	</div>
 </body>
 </html>
