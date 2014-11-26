@@ -95,6 +95,38 @@ function Master( _fbModelRef, _fbToken, _userID, _userName, _unitTest ){
 			//Redo
 			if( e.ctrlKey && ( e.which === 90 || e.which ===	122 ) )
 				master.undo.undo();
+			
+			//Backspace, stop if from taking the page back and delete an object	
+		    if( event.keyCode === 8 ){
+				var doPrevent = false;
+				var d = event.srcElement || event.target;
+				if ( 
+					( d.tagName.toUpperCase() === 'INPUT' && 
+					(
+						d.type.toUpperCase() === 'TEXT' ||
+						d.type.toUpperCase() === 'PASSWORD' || 
+						d.type.toUpperCase() === 'FILE' || 
+						d.type.toUpperCase() === 'EMAIL' || 
+						d.type.toUpperCase() === 'SEARCH' || 
+						d.type.toUpperCase() === 'DATE' )
+					) || 
+					d.tagName.toUpperCase() === 'TEXTAREA') {
+					
+					doPrevent = d.readOnly || d.disabled;
+				} else {
+					doPrevent = true;
+				}
+				
+				if ( doPrevent === true ){
+					master.canvas.ormObj.deleteOnKeypress();
+					event.preventDefault();
+				}
+		    }
+		    
+		    //Delete object on delete
+	  		if( e.which === 46 ){
+	  			master.canvas.ormObj.deleteOnKeypress();
+	  		}
 		});
 		
 		$('#obj_name').on( 'keypress', function( e ){
@@ -112,6 +144,24 @@ function Master( _fbModelRef, _fbToken, _userID, _userName, _unitTest ){
 		$('#inverse_label').on( 'keypress', function( e ){
 			master.line.saveEditPredicateOnEnter( e );
 		});
+		
+		//Code taken from: http://stackoverflow.com/questions/1119289/how-to-show-the-are-you-sure-you-want-to-navigate-away-from-this-page-when-ch
+		var confirmOnPageExit = function (e){
+		    // If we haven't been passed the event get the window.event
+		    e = e || window.event;
+		
+		    var message = 'Are you sure you wish to leve this page';
+		
+		    // For IE6-8 and Firefox prior to version 4
+		    if (e) {
+		        e.returnValue = message;
+		    }
+		
+		    // For Chrome, Safari, IE8+ and Opera 12+
+		    return message;
+		};
+		
+		window.onbeforeunload = confirmOnPageExit;
 		
 		//Initiate the canvas object
 		master.canvas = new Canvas();

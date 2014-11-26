@@ -401,7 +401,7 @@ Transaction.prototype.setListeners = function(){
 					master.canvas.reset( function(){
 						closeBlockingAlert();	
 					});
-				}		
+				}
 			}
 			
 			uiOpen();

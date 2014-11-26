@@ -104,30 +104,6 @@ function CanvasORMObj(){
 		wrap: "none",
 		id: 'UUID'
   	}
-  	
-  	//Set on keydown event that will delete all selected objects
-  	$('body').on( 'keydown.ormObjDelete', function( e ){
-  		//Check that key pressed is delete
-  		if( e.which === 46 ){
-  			//Get all select objects ID's and place them into an array
-  			var out = [];
-			for( var ref in Kinetic.isSelected ){
-				var group = Kinetic.isSelected[ ref ];
-				
-				var visualGroup = getObjPointer( master.model, group.id() );
-				
-				out[ out.length ] = visualGroup.modelID;
-			}
-			
-			//Deselect the objects
-			deselect();
-			//Send the ID to be delete to deleteObj in ORMObj 
-			master.ormObj.deleteObj( out );
-			
-			//Reset cursor
-			document.body.style.cursor = 'default';
-  		}
-  	});
 }
 
 /*	visualOnlySync: if the change to the object was visual only
@@ -1038,6 +1014,29 @@ CanvasORMObj.prototype.deleteObj = function( _id, _integrateWith ){
 	}
 	
 	return actions;
+}
+
+CanvasORMObj.prototype.deleteOnKeypress = function(){
+	//Get all select objects ID's and place them into an array
+	var out = [];
+	for( var ref in Kinetic.isSelected ){
+		var group = Kinetic.isSelected[ ref ];
+		
+		var visualGroup = getObjPointer( master.model, group.id() );
+		
+		out[ out.length ] = visualGroup.modelID;
+	}
+	
+	if( out.length === 0 )
+		return;
+	
+	//Deselect the objects
+	deselect();
+	//Send the ID to be delete to deleteObj in ORMObj 
+	master.ormObj.deleteObj( out );
+	
+	//Reset cursor
+	document.body.style.cursor = 'default';
 }
 
 /*	toggleCreateListener: toggles on and off a listener for creating new objects.
