@@ -150,7 +150,7 @@ function Master( _fbModelRef, _fbToken, _userID, _userName, _unitTest ){
 		    // If we haven't been passed the event get the window.event
 		    e = e || window.event;
 		
-		    var message = 'Are you sure you wish to leve this page';
+		    var message = '';
 		
 		    // For IE6-8 and Firefox prior to version 4
 		    if (e) {
