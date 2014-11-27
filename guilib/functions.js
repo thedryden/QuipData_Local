@@ -244,7 +244,7 @@ function JSONEquals( _json1, _json2 ){
 /*	Adds and equals function to an array that compare the two array.
  * 	If the two array are not ordered identically false will be returned.
  */ 
-Array.prototype.equals = function( _a ){
+ArrayEqualsFunc = function( _a ){
 	if (this === _a) return true;
 	if (this == null || _a == null) return false;
 	//We know this is an array so testing for it to be an array is redundant
@@ -260,112 +260,9 @@ Array.prototype.equals = function( _a ){
 	return true;
 }
 
-function ArrayMath(){};
-ArrayMath.prototype = {
-	//calculate the mean of a number array
-	mean : function(arr){
-	    var len = 0;
-	    var sum = 0;
-	    
-	    for(var i = 0; i < arr.length; i++ )    {
-	          if (arr[i] == ""){}
-	          else if (!$.isNumeric(arr[i]))
-	          {
-	              return undefined;
-	          }
-	          else
-	          {
-	             len++;
-	             sum += parseFloat(arr[i]); 
-	          }
-	    }
-	
-	    return sum / len;
-	}
-	
-	, variance : function(arr){
-	    var mean = ArrayMath.mean( arr );
-		var len = 0;
-		
-		if( mean == undefined )
-			return undefined;
-			
-		var v = 0;
-		for(var i=0;i<arr.length;i++){
-			if (arr[i] == ""){
-				//Do Nothing
-			} else {
-				len++;
-				v += (arr[i] - mean) * (arr[i] - mean);              
-			}    
-		}
-		    
-		return v / len;
-	}
-	
-	, max : function(arr){
-	    var max = null;
-	    
-	    for(var i=0;i<arr.length;i++)
-	    {
-	          if (arr[i] == ""){
-	          	//Do Nothing
-	          } else if (!$.isNumeric(arr[i])) {
-	              return undefined;
-	          } else {
-	             if ( max === null || arr[i] > max) 
-	             	max = arr[i];
-	          }
-	    }
-	
-	    return max;    
-	}
-	
-	, min : function(arr){
-	    var min = null;
-	    
-	    for(var i=0;i<arr.length;i++){
-	          if (arr[i] == ""){
-	          	//Do Nothing
-	          } else if (!$.isNumeric(arr[i])) {
-	              return undefined;
-	          } else {
-				if( min === null || min > arr[i] )
-					min = arr[i];
-	          }
-	    }
-	
-	    return min;
-	}
-	
-	//Standard deviation
-	, stDev : function( _a ){
-		return Math.sqrt( ArrayMath.variance( _a ) );
-	}
-	
-	//Standard error
-	, stError : function( _a ){
-		return Math.sqrt( ArrayMath.variance( _a ) ) / arr.length-1;
-	}
-	
-	, median : function(arr){
-		var arr = arr.slice(0);
-	    
-	    arr.sort(function(a,b){return a-b});
-	    
-	    var median = 0;
-	    
-	    if (arr.length % 2 == 1)
-	    {
-	        median = arr[ ( arr.length +1 ) / 2 - 1 ];
-	    }
-	    else
-	    {
-	        median = ( 1 * arr[ arr.length / 2 - 1 ] + 1 * arr[ arr.length / 2 ] ) / 2;
-	    }
-	    
-	    return median
-	}
-}
-
-var ArrayMath = new ArrayMath();
+Object.defineProperty( Array.prototype, "equals", { 
+	value: ArrayEqualsFunc,
+	writable: false,
+	enumerable: false,
+	configurable: true
+});
